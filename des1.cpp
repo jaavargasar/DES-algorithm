@@ -57,6 +57,17 @@ const int Expansion[48] ={
     28, 29, 30, 31, 32,  1
 };
 
+const int Pbox[32] ={
+    16,  7, 20, 21,
+    29, 12, 28, 17,
+     1, 15, 23, 26,
+     5, 18, 31, 10,
+     2,  8, 24, 14,
+    32, 27,  3,  9,
+    19, 13, 30,  6,
+    22, 11,  4, 25
+};
+
 const int Sbox[8][4][16] = {
    {
    {14,  4, 13,  1,  2, 15, 11,  8,  3, 10,  6, 12,  5,  9,  0,  7},
@@ -297,6 +308,18 @@ ull generateSboxCombination(ull Bn){
 
 }
 
+ull generateFalgorithm(ull snBn){
+
+    ull k=0L, fn=0L;
+    for(int j=32-1;j>=0;j--){
+            if( snBn & ( 1L << (32-Pbox[j])*1L ) ) {
+                 fn|= ( 1L<< k );
+            }
+            k++;
+    }
+    return fn;
+}
+
 
 
 int main(){
@@ -324,6 +347,11 @@ int main(){
     printf("snbn: %llu\n",snBn );
     fflush(stdout);
 
+    ull fn = generateFalgorithm(snBn);
+    printf("fn: %llu\n",fn );
+    fflush(stdout);
+
+
     return 0;
 }
 
@@ -350,5 +378,4 @@ int main(){
 // S8(B8) 0111 7
 
 
-// 0101 1100 1000 0010 1011 0101 1001 0111
-// 01011100100000101011010110010111
+// 00100011010010101010100110111011
