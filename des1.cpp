@@ -257,11 +257,14 @@ ull getSboxNumber(int Bn, int k){
     return ( Sbox[k][row][col]*1L);
 }
 
-void generateSboxCombination(ull Bn){
+
+ull generateSboxCombination(ull Bn){
 
     int Bbox[8];
     ull sbBox[8];
     int number=0, k=7;
+    ull snBnChain=0L;
+    ull step=28L;
 
     for(int i=0;i<=48;i++ ){
 
@@ -284,6 +287,13 @@ void generateSboxCombination(ull Bn){
         fflush(stdout);
     }
 
+    
+    for(int i=0;i<8;i++){
+        snBnChain |= (sbBox[i]<< step);
+        step-=4;
+    }
+
+    return snBnChain;
 
 }
 
@@ -309,9 +319,11 @@ int main(){
     fflush(stdout);
 
 
-    generateSboxCombination( xorOperation( expandRn(iniPerHalves.second),keysBlocks[0] ) );
+    ull snBn = generateSboxCombination( xorOperation( expandRn(iniPerHalves.second),keysBlocks[0] ) );
 
-    
+    printf("snbn: %llu\n",snBn );
+    fflush(stdout);
+
     return 0;
 }
 
@@ -336,3 +348,7 @@ int main(){
 // S6(B6) 0101 5
 // S7(B7) 1001 9
 // S8(B8) 0111 7
+
+
+// 0101 1100 1000 0010 1011 0101 1001 0111
+// 01011100100000101011010110010111
