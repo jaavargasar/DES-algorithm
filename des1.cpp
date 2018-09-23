@@ -1,4 +1,6 @@
-#include<bits/stdc++.h>
+#include<iostream>
+#include<stdio.h>
+#include<utility>
 
 using namespace std;
 
@@ -131,7 +133,6 @@ void generateKeysBlocks(){
 
 }
 
-
 ull generateIniPer(){
     ull keyPlus=0L;
     int j=0;
@@ -141,15 +142,31 @@ ull generateIniPer(){
         }
         j++;
     }
+    printf("%llu\n",keyPlus);
+    fflush(stdout);
     return keyPlus;
 }
+
+
+uull splitIniPer(ull codeIniPer){
+    ull l0=0L, r0=0L;
+
+    for(int i=0;i<32;i++){
+        if(codeIniPer & (1L<<i*1L ) ) r0|=(1L<<i*1L);
+        if(codeIniPer & (1L<< i*1L +32L ) ) l0|=(1L<<i*1L);
+    }
+    return make_pair( l0, r0);
+}
+
 
 int main(){
 
     uull keyHalves = splitKeyPlus( generateKeyPlus() );
     generateCnDnBlocks( keyHalves );
     generateKeysBlocks();
-    cout<<generateIniPer()<<endl;
+    uull iniPerHalves = splitIniPer(generateIniPer() );
+    printf("%llu and %llu\n",iniPerHalves.first,iniPerHalves.second);
+    fflush(stdout);
     
     return 0;
 }
