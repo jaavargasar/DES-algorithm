@@ -32,7 +32,7 @@ const int PC2[48] = {
    46, 42, 50, 36, 29, 32
 };
 
-const int IP[64] = {
+const int IniPer[64] = {
     58, 50, 42, 34, 26, 18, 10,  2,
     60, 52, 44, 36, 28, 20, 12,  4,
     62, 54, 46, 38, 30, 22, 14,  6,
@@ -132,11 +132,24 @@ void generateKeysBlocks(){
 }
 
 
+ull generateIniPer(){
+    ull keyPlus=0L;
+    int j=0;
+    for(int i=64-1;i>=0;i--){
+        if( message[ IniPer[i]/8 ] & (1L << ( ( 64-IniPer[i]) % 8 ) ) ){
+            keyPlus|=( 1L<< j*1L );
+        }
+        j++;
+    }
+    return keyPlus;
+}
+
 int main(){
 
     uull keyHalves = splitKeyPlus( generateKeyPlus() );
     generateCnDnBlocks( keyHalves );
     generateKeysBlocks();
+    cout<<generateIniPer()<<endl;
     
     return 0;
 }
