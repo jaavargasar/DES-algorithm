@@ -351,6 +351,11 @@ int main(){
     printf("fn: %llu\n",fn );
     fflush(stdout);
 
+    ull R1 = iniPerHalves.first ^ fn;
+    printf("R1: %llu\n",R1 );
+    fflush(stdout);
+
+
 
     return 0;
 }
@@ -379,3 +384,6 @@ int main(){
 
 
 // 00100011010010101010100110111011
+
+
+// 11101111010010100110010101000100
