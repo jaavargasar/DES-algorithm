@@ -45,15 +45,27 @@ const int IniPer[64] = {
     63, 55, 47, 39, 31, 23, 15,  7
 };
 
+
+const int Expansion[48] ={
+    32, 1,  2,   3, 4,  5,
+    4,  5,  6,   7, 8,  9,
+    8,  9,  10, 11, 12, 13,
+    12, 13, 14, 15, 16, 17,
+    16, 17, 18, 19, 20, 21,
+    20, 21, 22, 23, 24, 25,
+    24, 25, 26, 27, 28, 29,
+    28, 29, 30, 31, 32,  1
+};
+
 const unsigned char iniKey[8] = {
     0x13,0x34,0x57,0x79,0x9B,0xBC,0xDF,0xF1};
 
 const unsigned char message[8] = {
     0x01,0x23,0x45,0x67,0x89,0xAB,0xCD,0xEF};
 
-uull CnDnBlocks[17];
+uull CnDnBlocks[17]; //from c0d0 to c16d16
 
-ull keysBlocks[16];
+ull keysBlocks[16];  //from key[1] = k0 to key[16] = k15
 
 ull generateKeyPlus(){
     ull keyPlus=0L;
@@ -158,16 +170,42 @@ uull splitIniPer(ull codeIniPer){
     return make_pair( l0, r0);
 }
 
+ull expandRn(ull Rn){
+    //from a Rn 32 bit to a Kn 48 bit
+    ull k=0L, exRn=0L;
+    for(int j=48-1;j>=0;j--){
+            if( Rn & ( 1L << (32-Expansion[j])*1L ) ) {
+                 exRn|= ( 1L<< k );
+            }
+            k++;
+    }
+    return exRn;
+}
+
+ull xorOperation(ull En, ull Kn){
+    return (Kn ^ En);
+}
+
 
 int main(){
 
     uull keyHalves = splitKeyPlus( generateKeyPlus() );
     generateCnDnBlocks( keyHalves );
     generateKeysBlocks();
-    uull iniPerHalves = splitIniPer(generateIniPer() );
+    uull iniPerHalves = splitIniPer(generateIniPer() ); //got L0 and R0
     printf("%llu and %llu\n",iniPerHalves.first,iniPerHalves.second);
     fflush(stdout);
+
+
+    printf("expansion: %llu\n",  expandRn(iniPerHalves.second) );
+    fflush(stdout);
+
+    printf("key 1: %llu\n", keysBlocks[0] );
+    fflush(stdout);
+
+    printf("xor: %llu\n",  xorOperation( expandRn(iniPerHalves.second),keysBlocks[0] ) );
+    fflush(stdout);
+
     
     return 0;
 }
-
