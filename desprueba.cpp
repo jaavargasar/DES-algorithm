@@ -136,6 +136,7 @@ uull CnDnBlocks[17]; //from c0d0 to c16d16
 
 ull keysBlocks[16];  //from key[1] = k0 to key[16] = k15
 
+uull LnRnBlocks[17]; // from loro to l16r16
 
 ull generateKeyPlus(){
     ull keyPlus=0L;
@@ -224,6 +225,8 @@ ull generateIniPer(){
         }
         j++;
     }
+    printf("%llu\n",keyPlus);
+    fflush(stdout);
     return keyPlus;
 }
 
@@ -279,6 +282,8 @@ ull generateSboxCombination(ull Bn){
     for(int i=0;i<=48;i++ ){
 
         if( i%6==0 && i>=6){
+            printf("B%i: %i\n",k+1,number);
+            fflush(stdout);
 
             Bbox[ k-- ] = number;
             number = 0;
@@ -290,6 +295,9 @@ ull generateSboxCombination(ull Bn){
 
     for(int i=0;i<8;i++){
         sbBox[i] = getSboxNumber( Bbox[i], i);
+
+        printf("S%i(B%i): %llu\n",i+1,i+1,sbBox[i]);
+        fflush(stdout);
     }
 
     
@@ -317,19 +325,19 @@ ull generateFalgorithm(ull snBn){
 void generateLnRnBlocks(uull L0R0){
 
     LnRnBlocks[0] = L0R0;
-    ull fn;
 
     for(int time=1; time<=16;time++){
 
         ull Ln = LnRnBlocks[ time-1 ].first;
         ull Rn = LnRnBlocks[ time-1 ].second;
-       
+        
+        
         ull snBn = 
             generateSboxCombination( xorOperation( expandRn( Rn ),keysBlocks[ time-1 ] ) );
         
-        fn = generateFalgorithm(snBn);
+        ull fn = generateFalgorithm(snBn);
 
-        uull LnRn = make_pair( Rn, (Ln ^ fn) ); 
+        uull LnRn = make_pair( Rn, (fn ^ Ln) ); 
         LnRnBlocks[ time ] = LnRn;
 
     }
@@ -340,30 +348,64 @@ void generateLnRnBlocks(uull L0R0){
 
 int main(){
 
-    printf("DES-algorithm\n");
-    fflush(stdout);
-
     uull keyHalves = splitKeyPlus( generateKeyPlus() );
     generateCnDnBlocks( keyHalves );
     generateKeysBlocks();
     uull iniPerHalves = splitIniPer(generateIniPer() ); //got L0 and R0
+   
 
+    printf("expansion: %llu\n",  expandRn(iniPerHalves.second) );
+    fflush(stdout);
 
-    printf("L0: %llu\t R0: %llu\n",iniPerHalves.first,iniPerHalves.second);
+    printf("key 1: %llu\n", keysBlocks[0] );
+    fflush(stdout);
+
+    printf("xor: %llu\n",  xorOperation( expandRn(iniPerHalves.second),keysBlocks[0] ) );
     fflush(stdout);
 
 
-    generateLnRnBlocks( iniPerHalves );
+    ull snBn = generateSboxCombination( xorOperation( expandRn(iniPerHalves.second),keysBlocks[0] ) );
 
-    for(int i=0;i<=16;i++){
-        printf("L%i: %llu\t R%i: %llu\n",i,LnRnBlocks[i].first,i,LnRnBlocks[i].second);
-        fflush(stdout);
+    printf("snbn: %llu\n",snBn );
+    fflush(stdout);
 
-    }
-   
+    ull fn = generateFalgorithm(snBn);
+    printf("fn: %llu\n",fn );
+    fflush(stdout);
+
+    ull R1 = iniPerHalves.first ^ fn;
+    printf("R1: %llu\n",R1 );
+    fflush(stdout);
+
+
+
     return 0;
 }
 
+// 011000010001011110111010100001100110010100100111
 
-// L16 01000011010000100011001000110100    1128411700
-// R16 00001010010011001101100110010101    172808597
+
+// B1 011000 24
+// B2 010001 17 
+// B3 011110 30 
+// B4 111010 58 
+// B5 100001 33 
+// B6 100110 38
+// B7 010100 20
+// B8 100111 39
+
+
+// S1(B1) 0101 5
+// S2(B2) 1100 12
+// S3(B3) 1000 8
+// S4(B4) 0010 2
+// S5(B5) 1011 11
+// S6(B6) 0101 5
+// S7(B7) 1001 9
+// S8(B8) 0111 7
+
+
+// 00100011010010101010100110111011
+
+
+// 11101111010010100110010101000100

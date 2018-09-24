@@ -125,6 +125,8 @@ const int Sbox[8][4][16] = {
    },
 };
 
+uull LnRnBlocks[17]; // from loro to l16r16
+
 
 const unsigned char iniKey[8] = {
     0x13,0x34,0x57,0x79,0x9B,0xBC,0xDF,0xF1};
@@ -135,7 +137,6 @@ const unsigned char message[8] = {
 uull CnDnBlocks[17]; //from c0d0 to c16d16
 
 ull keysBlocks[16];  //from key[1] = k0 to key[16] = k15
-
 
 ull generateKeyPlus(){
     ull keyPlus=0L;
@@ -224,6 +225,7 @@ ull generateIniPer(){
         }
         j++;
     }
+    
     return keyPlus;
 }
 
@@ -279,6 +281,7 @@ ull generateSboxCombination(ull Bn){
     for(int i=0;i<=48;i++ ){
 
         if( i%6==0 && i>=6){
+            
 
             Bbox[ k-- ] = number;
             number = 0;
@@ -290,6 +293,8 @@ ull generateSboxCombination(ull Bn){
 
     for(int i=0;i<8;i++){
         sbBox[i] = getSboxNumber( Bbox[i], i);
+
+       
     }
 
     
@@ -340,18 +345,12 @@ void generateLnRnBlocks(uull L0R0){
 
 int main(){
 
-    printf("DES-algorithm\n");
-    fflush(stdout);
-
     uull keyHalves = splitKeyPlus( generateKeyPlus() );
     generateCnDnBlocks( keyHalves );
     generateKeysBlocks();
     uull iniPerHalves = splitIniPer(generateIniPer() ); //got L0 and R0
-
-
-    printf("L0: %llu\t R0: %llu\n",iniPerHalves.first,iniPerHalves.second);
+    printf("%llu and %llu\n",iniPerHalves.first,iniPerHalves.second);
     fflush(stdout);
-
 
     generateLnRnBlocks( iniPerHalves );
 
@@ -360,10 +359,8 @@ int main(){
         fflush(stdout);
 
     }
-   
+
+
     return 0;
 }
 
-
-// L16 01000011010000100011001000110100    1128411700
-// R16 00001010010011001101100110010101    172808597
