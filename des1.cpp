@@ -396,6 +396,8 @@ int main(){
     printf("cipher: %llu\n",cipherMessage);
     fflush(stdout);
 
+    printf("Hex Cipher: %llX\n", cipherMessage);
+    fflush(stdout);
 
     return 0;
 }
