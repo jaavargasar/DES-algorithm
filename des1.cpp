@@ -341,6 +341,13 @@ void generateLnRnBlocks(uull L0R0){
 
 }
 
+ull reverseLnRn( uull LnRn){
+    ull Ln = LnRn.first;
+    ull Rn = LnRn.second;
+
+    return ( Rn<<32L) | Ln;
+}
+
 
 
 int main(){
@@ -360,6 +367,10 @@ int main(){
 
     }
 
+    ull revLnRn = reverseLnRn( LnRnBlocks[16] );
+    printf("rev: %llu\n",revLnRn);
+    fflush(stdout);
+
 
     return 0;
 }
@@ -367,3 +378,5 @@ int main(){
 
 // L16 01000011010000100011001000110100    1128411700
 // R16 00001010010011001101100110010101    172808597
+
+// revL16R16 0000101001001100110110011001010101000011010000100011001000110100  742207273711055412
