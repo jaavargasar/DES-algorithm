@@ -8,6 +8,12 @@ typedef unsigned long long ull;
 typedef pair< ull , ull>  uull;
 
 
+uull LnRnBlocks[17]; // from l0r0 to l16r16
+
+uull CnDnBlocks[17]; //from c0d0 to c16d16
+
+ull keysBlocks[16];  //from key[1] = k0 to key[16] = k15
+
 const ull Rotations[16] = {
     1, 1, 2, 2, 2, 2, 2, 2, 1, 2, 2, 2, 2, 2, 2, 1
 };
@@ -45,6 +51,16 @@ const int IniPer[64] = {
     63, 55, 47, 39, 31, 23, 15,  7
 };
 
+const int reverseIniPer[64] ={
+    40, 8, 48, 16, 56, 24, 64, 32,
+    39, 7, 47, 15, 55, 23, 63, 31,
+    38, 6, 46, 14, 54, 22, 62, 30,
+    37, 5, 45, 13, 53, 21, 61, 29,
+    36, 4, 44, 12, 52, 20, 60, 28,
+    35, 3, 43, 11, 51, 19, 59, 27,
+    34, 2, 42, 10, 50, 18, 58, 26,
+    33, 1, 41,  9, 49, 17, 57, 25
+};
 
 const int Expansion[48] ={
     32, 1,  2,   3, 4,  5,
@@ -125,18 +141,13 @@ const int Sbox[8][4][16] = {
    },
 };
 
-uull LnRnBlocks[17]; // from loro to l16r16
-
-
 const unsigned char iniKey[8] = {
     0x13,0x34,0x57,0x79,0x9B,0xBC,0xDF,0xF1};
 
 const unsigned char message[8] = {
     0x01,0x23,0x45,0x67,0x89,0xAB,0xCD,0xEF};
 
-uull CnDnBlocks[17]; //from c0d0 to c16d16
 
-ull keysBlocks[16];  //from key[1] = k0 to key[16] = k15
 
 ull generateKeyPlus(){
     ull keyPlus=0L;
@@ -160,6 +171,15 @@ uull splitKeyPlus(ull keyPlus){
     return make_pair( c0, d0);
 }
 
+uull splitIniPer(ull codeIniPer){
+    ull l0=0L, r0=0L;
+
+    for(int i=0;i<32;i++){
+        if(codeIniPer & (1L<<i*1L ) ) r0|=(1L<<i*1L);
+        if(codeIniPer & (1L<< i*1L +32L ) ) l0|=(1L<<i*1L);
+    }
+    return make_pair( l0, r0);
+}
 
 void generateCnDnBlocks( uull seedKey){
     CnDnBlocks[0] = seedKey;
@@ -227,17 +247,6 @@ ull generateIniPer(){
     }
     
     return keyPlus;
-}
-
-
-uull splitIniPer(ull codeIniPer){
-    ull l0=0L, r0=0L;
-
-    for(int i=0;i<32;i++){
-        if(codeIniPer & (1L<<i*1L ) ) r0|=(1L<<i*1L);
-        if(codeIniPer & (1L<< i*1L +32L ) ) l0|=(1L<<i*1L);
-    }
-    return make_pair( l0, r0);
 }
 
 ull expandRn(ull Rn){
@@ -341,6 +350,24 @@ void generateLnRnBlocks(uull L0R0){
 
 }
 
+ull reverseLnRn( uull LnRn){
+    ull Ln = LnRn.first;
+    ull Rn = LnRn.second;
+
+    return ( Rn<<32L) | Ln;
+}
+
+ull generateCipherMessage( ull RnLn ){
+
+    ull k=0L, cipher=0L;
+    for(int j=64-1;j>=0;j--){
+            if( RnLn & ( 1L << (64-reverseIniPer[j])*1L ) ) {
+                 cipher|= ( 1L<< k );
+            }
+            k++;
+    }
+    return cipher;
+}
 
 
 int main(){
@@ -349,17 +376,18 @@ int main(){
     generateCnDnBlocks( keyHalves );
     generateKeysBlocks();
     uull iniPerHalves = splitIniPer(generateIniPer() ); //got L0 and R0
-    printf("%llu and %llu\n",iniPerHalves.first,iniPerHalves.second);
-    fflush(stdout);
+    
 
     generateLnRnBlocks( iniPerHalves );
 
-    for(int i=0;i<=16;i++){
-        printf("L%i: %llu\t R%i: %llu\n",i,LnRnBlocks[i].first,i,LnRnBlocks[i].second);
-        fflush(stdout);
+    ull revLnRn = reverseLnRn( LnRnBlocks[16] );
+   
+    ull cipherMessage = generateCipherMessage( revLnRn );
+    printf("cipher: %llu\n",cipherMessage);
+    fflush(stdout);
 
-    }
-
+    printf("Hex Cipher: %llX\n", cipherMessage);
+    fflush(stdout);
 
     return 0;
 }
@@ -367,3 +395,7 @@ int main(){
 
 // L16 01000011010000100011001000110100    1128411700
 // R16 00001010010011001101100110010101    172808597
+
+// revL16R16 0000101001001100110110011001010101000011010000100011001000110100  742207273711055412
+
+// cipher 1000010111101000000100110101010000001111000010101011010000000101     9648983453391827973
