@@ -8,7 +8,7 @@ typedef unsigned long long ull;
 typedef pair< ull , ull>  uull;
 
 
-uull LnRnBlocks[17]; // from loro to l16r16
+uull LnRnBlocks[17]; // from l0r0 to l16r16
 
 uull CnDnBlocks[17]; //from c0d0 to c16d16
 
@@ -376,8 +376,7 @@ int main(){
     generateCnDnBlocks( keyHalves );
     generateKeysBlocks();
     uull iniPerHalves = splitIniPer(generateIniPer() ); //got L0 and R0
-    printf("%llu and %llu\n",iniPerHalves.first,iniPerHalves.second);
-    fflush(stdout);
+    
 
     generateLnRnBlocks( iniPerHalves );
 
