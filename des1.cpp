@@ -45,6 +45,16 @@ const int IniPer[64] = {
     63, 55, 47, 39, 31, 23, 15,  7
 };
 
+const int reverseIniPer[64] ={
+    40, 8, 48, 16, 56, 24, 64, 32,
+    39, 7, 47, 15, 55, 23, 63, 31,
+    38, 6, 46, 14, 54, 22, 62, 30,
+    37, 5, 45, 13, 53, 21, 61, 29,
+    36, 4, 44, 12, 52, 20, 60, 28,
+    35, 3, 43, 11, 51, 19, 59, 27,
+    34, 2, 42, 10, 50, 18, 58, 26,
+    33, 1, 41,  9, 49, 17, 57, 25
+};
 
 const int Expansion[48] ={
     32, 1,  2,   3, 4,  5,
@@ -348,6 +358,17 @@ ull reverseLnRn( uull LnRn){
     return ( Rn<<32L) | Ln;
 }
 
+ull generateCipherMessage( ull RnLn ){
+
+    ull k=0L, cipher=0L;
+    for(int j=64-1;j>=0;j--){
+            if( RnLn & ( 1L << (64-reverseIniPer[j])*1L ) ) {
+                 cipher|= ( 1L<< k );
+            }
+            k++;
+    }
+    return cipher;
+}
 
 
 int main(){
@@ -371,6 +392,10 @@ int main(){
     printf("rev: %llu\n",revLnRn);
     fflush(stdout);
 
+    ull cipherMessage = generateCipherMessage( revLnRn );
+    printf("cipher: %llu\n",cipherMessage);
+    fflush(stdout);
+
 
     return 0;
 }
@@ -380,3 +405,5 @@ int main(){
 // R16 00001010010011001101100110010101    172808597
 
 // revL16R16 0000101001001100110110011001010101000011010000100011001000110100  742207273711055412
+
+// cipher 1000010111101000000100110101010000001111000010101011010000000101     9648983453391827973
