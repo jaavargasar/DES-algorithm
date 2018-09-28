@@ -1,6 +1,4 @@
-#include<iostream>
-#include<stdio.h>
-#include<utility>
+#include<bits/stdc++.h>
 
 using namespace std;
 
@@ -141,10 +139,10 @@ const int Sbox[8][4][16] = {
    },
 };
 
-const unsigned char iniKey[8] = {
+const ull iniKey[8] = {
     0x13,0x34,0x57,0x79,0x9B,0xBC,0xDF,0xF1};
 
-const unsigned char message[8] = {
+const ull message[8] = {    
     0x01,0x23,0x45,0x67,0x89,0xAB,0xCD,0xEF};
 
 
@@ -154,7 +152,7 @@ ull generateKeyPlus(){
     int j=0;
     for(int i=56-1;i>=0;i--){
         if( iniKey[ PC1[i]/8 ] & (1 << ( ( 64-PC1[i]) % 8 ) ) ){
-            keyPlus|=( 1L<< j*1L );
+            keyPlus|=( 1LL<< j*1L );
         }
         j++;
     }
@@ -165,8 +163,8 @@ uull splitKeyPlus(ull keyPlus){
     ull c0=0L, d0=0L;
 
     for(int i=0;i<28;i++){
-        if(keyPlus & (1L<<i*1L ) ) d0|=(1L<<i*1L);
-        if(keyPlus & (1L<< i*1L +28L ) ) c0|=(1L<<i*1L);
+        if(keyPlus & (1LL<<i*1L ) ) d0|=(1LL<<i*1L);
+        if(keyPlus & (1LL<< i*1L +28L ) ) c0|=(1LL<<i*1L);
     }
     return make_pair( c0, d0);
 }
@@ -175,8 +173,8 @@ uull splitIniPer(ull codeIniPer){
     ull l0=0L, r0=0L;
 
     for(int i=0;i<32;i++){
-        if(codeIniPer & (1L<<i*1L ) ) r0|=(1L<<i*1L);
-        if(codeIniPer & (1L<< i*1L +32L ) ) l0|=(1L<<i*1L);
+        if(codeIniPer & (1LL<<i*1L ) ) r0|=(1LL<<i*1L);
+        if(codeIniPer & (1LL<< i*1L +32L ) ) l0|=(1LL<<i*1L);
     }
     return make_pair( l0, r0);
 }
@@ -196,8 +194,8 @@ void generateCnDnBlocks( uull seedKey){
 
         for(ull j=0;j< Rotations[ i-1 ];j++){
 
-            if(  cn & (1 << (27-j) )  ) getOnCn|= 1L << (Rotations[ i-1 ]==1 ? j: 1-j) ;
-            if(  dn & (1 << (27-j) )  ) getOnDn|= 1L << (Rotations[ i-1 ]==1 ? j: 1-j);
+            if(  cn & (1 << (27-j) )  ) getOnCn|= 1LL << (Rotations[ i-1 ]==1 ? j: 1-j) ;
+            if(  dn & (1 << (27-j) )  ) getOnDn|= 1LL << (Rotations[ i-1 ]==1 ? j: 1-j);
 
         }
 
@@ -226,8 +224,8 @@ void generateKeysBlocks(){
         keyn = 0L; k=0L;
 
         for(int j=48-1;j>=0;j--){
-            if( cnDn & ( 1L << (56-PC2[j])*1L ) ) {
-                 keyn|= ( 1L<< k );
+            if( cnDn & ( 1LL << (56-PC2[j])*1L ) ) {
+                 keyn|= ( 1LL<< k );
             }
             k++;
         }
@@ -240,8 +238,8 @@ ull generateIniPer(){
     ull keyPlus=0L;
     int j=0;
     for(int i=64-1;i>=0;i--){
-        if( message[ IniPer[i]/8 ] & (1L << ( ( 64-IniPer[i]) % 8 ) ) ){
-            keyPlus|=( 1L<< j*1L );
+        if( message[ (IniPer[i]/8) >=8 ? 7: (IniPer[i]/8) ]  & (1LL << ( ( 64-IniPer[i]) % 8 ) ) ){
+            keyPlus|=( 1LL<< j*1L );
         }
         j++;
     }
@@ -253,8 +251,8 @@ ull expandRn(ull Rn){
     //from a Rn 32 bit to a Kn 48 bit
     ull k=0L, exRn=0L;
     for(int j=48-1;j>=0;j--){
-            if( Rn & ( 1L << (32-Expansion[j])*1L ) ) {
-                 exRn|= ( 1L<< k );
+            if( Rn & ( 1LL << (32-Expansion[j])*1L ) ) {
+                 exRn|= ( 1LL<< k );
             }
             k++;
     }
@@ -275,7 +273,7 @@ ull getSboxNumber(int Bn, int k){
         if( Bn & 1<<i ) col |=(1<<(i-1));
     }
 
-    return ( Sbox[k][row][col]*1L);
+    return ( Sbox[k][row][col]*1LL);
 }
 
 
@@ -295,8 +293,8 @@ ull generateSboxCombination(ull Bn){
             Bbox[ k-- ] = number;
             number = 0;
         }
-        if( Bn & (1L<<i*1L) ){
-            number |= (1L<< ( (i%6)*1L ) );
+        if( Bn & (1LL<<i*1L) ){
+            number |= (1LL<< ( (i%6)*1L ) );
         }
     }
 
@@ -320,8 +318,8 @@ ull generateFalgorithm(ull snBn){
 
     ull k=0L, fn=0L;
     for(int j=32-1;j>=0;j--){
-            if( snBn & ( 1L << (32-Pbox[j])*1L ) ) {
-                 fn|= ( 1L<< k );
+            if( snBn & ( 1LL << (32-Pbox[j])*1L ) ) {
+                 fn|= ( 1LL<< k );
             }
             k++;
     }
@@ -361,8 +359,8 @@ ull generateCipherMessage( ull RnLn ){
 
     ull k=0L, cipher=0L;
     for(int j=64-1;j>=0;j--){
-            if( RnLn & ( 1L << (64-reverseIniPer[j])*1L ) ) {
-                 cipher|= ( 1L<< k );
+            if( RnLn & ( 1LL << (64-reverseIniPer[j])*1L ) ) {
+                 cipher|= ( 1LL<< k );
             }
             k++;
     }
