@@ -1,4 +1,5 @@
 #include<bits/stdc++.h>
+#include "omp.h"
 
 using namespace std;
 
@@ -15,6 +16,7 @@ uull CnDnBlocks[17]; //from c0d0 to c16d16
 ull keysBlocks[16];  //from key[1] = k0 to key[16] = k15
 
 ull allCipherDES[1000000];
+
 
 const ull Rotations[16] = {
     1, 1, 2, 2, 2, 2, 2, 2, 1, 2, 2, 2, 2, 2, 2, 1
@@ -392,13 +394,36 @@ ull cipherDES(){
     return cipherMessage;
 }
 
+string converLongToString(ull number){
+
+    string result ="";
+    string ans ="";
+    while( number > 0){
+        result += number%10 + '0';
+        cout<<result<<endl;
+        number/=10LL;
+    }
+    
+    for(int i=result.size();i>=0;i--){
+        ans+=result[i];
+    }
+    return ans;
+
+}
+
+
 int main(){
 
 
+    #pragma omp parallel for
     for(int i=0;i<MAX;i++){
         allCipherDES[ i ] = cipherDES();
     }
 
+    // for(int i=0;i<MAX;i++){
+    //     printf("cipher: %llX\n", allCipherDES[i] );
+    //     fflush(stdout);
+    // }
 
     return 0;
 }
