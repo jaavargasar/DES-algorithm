@@ -5,6 +5,8 @@ using namespace std;
 typedef unsigned long long ull;
 typedef pair< ull , ull>  uull;
 
+const ull MAX = 100000;
+
 
 uull LnRnBlocks[17]; // from l0r0 to l16r16
 
@@ -368,8 +370,7 @@ ull generateCipherMessage( ull RnLn ){
 }
 
 
-int main(){
-
+void cipherDES(){
     uull keyHalves = splitKeyPlus( generateKeyPlus() );
     generateCnDnBlocks( keyHalves );
     generateKeysBlocks();
@@ -381,11 +382,21 @@ int main(){
     ull revLnRn = reverseLnRn( LnRnBlocks[16] );
    
     ull cipherMessage = generateCipherMessage( revLnRn );
-    printf("cipher: %llu\n",cipherMessage);
-    fflush(stdout);
+    // printf("cipher: %llu\n",cipherMessage);
+    // fflush(stdout);
 
-    printf("Hex Cipher: %llX\n", cipherMessage);
-    fflush(stdout);
+    // printf("Hex Cipher: %llX\n", cipherMessage);
+    // fflush(stdout);
+}
+
+int main(){
+
+
+    for(int i=0;i<MAX;i++){
+        printf("i: %i\n",i+1);
+        cipherDES();
+    }
+
 
     return 0;
 }
