@@ -156,11 +156,16 @@ const ull message[8] = {
 ull generateKeyPlus(){
     ull keyPlus=0L;
     int j=0;
-    for(int i=56-1;i>=0;i--){
-        if( iniKey[ PC1[i]/8 ] & (1 << ( ( 64-PC1[i]) % 8 ) ) ){
-            keyPlus|=( 1LL<< j*1L );
+    #pragma omp parallel num_threads(2)
+    {
+        #pragma omp for
+        for(int i=56-1;i>=0;i--){
+            if( iniKey[ PC1[i]/8 ] & (1 << ( ( 64-PC1[i]) % 8 ) ) ){
+                keyPlus|=( 1LL<< j*1L );
         }
         j++;
+    }
+    
     }
     return keyPlus;
 }
@@ -243,12 +248,18 @@ void generateKeysBlocks(){
 ull generateIniPer(){
     ull keyPlus=0L;
     int j=0;
-    for(int i=64-1;i>=0;i--){
-        if( message[ (IniPer[i]/8) >=8 ? 7: (IniPer[i]/8) ]  & (1LL << ( ( 64-IniPer[i]) % 8 ) ) ){
-            keyPlus|=( 1LL<< j*1L );
+
+    #pragma omp parallel num_threads(2)
+    {
+        #pragma omp for
+        for(int i=64-1;i>=0;i--){
+            if( message[ (IniPer[i]/8) >=8 ? 7: (IniPer[i]/8) ]  & (1LL << ( ( 64-IniPer[i]) % 8 ) ) ){
+                keyPlus|=( 1LL<< j*1L );
         }
         j++;
     }
+    }
+    
     
     return keyPlus;
 }
@@ -364,12 +375,20 @@ ull reverseLnRn( uull LnRn){
 ull generateCipherMessage( ull RnLn ){
 
     ull k=0L, cipher=0L;
-    for(int j=64-1;j>=0;j--){
+
+
+    #pragma omp parallel num_threads(2)
+    {
+        #pragma omp for
+        for(int j=64-1;j>=0;j--){
             if( RnLn & ( 1LL << (64-reverseIniPer[j])*1L ) ) {
                  cipher|= ( 1LL<< k );
             }
             k++;
     }
+    }
+    
+    
     return cipher;
 }
 
@@ -420,10 +439,10 @@ int main(){
         allCipherDES[ i ] = cipherDES();
     }
 
-    // for(int i=0;i<MAX;i++){
-    //     printf("cipher: %llX\n", allCipherDES[i] );
-    //     fflush(stdout);
-    // }
+     for(int i=0;i<MAX;i++){
+         printf("cipher: %llX\n", allCipherDES[i] );
+         fflush(stdout);
+     }
 
     return 0;
 }
