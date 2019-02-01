@@ -6,7 +6,7 @@ using namespace std;
 typedef unsigned long long ull;
 typedef pair< ull , ull>  uull;
 
-const ull MAX = 5; // 1000000
+const ull MAX = 1; // 1000000
 
 
 uull LnRnBlocks[17]; // from l0r0 to l16r16
@@ -151,22 +151,62 @@ const ull iniKey[8] = {
 const ull message[8] = {    
     0x01,0x23,0x45,0x67,0x89,0xAB,0xCD,0xEF};
 
+__global__ void createKeyPlus( ull *cIniKey, int *cPC1, ull *result){
+    // __shared__ ull keyPlus;
+
+    // keyPlus = 0L;
+    // __syncthreads();
+
+    int i = threadIdx.x + blockIdx.x * blockDim.x;
+    if( cIniKey[ cPC1[i]/8 ] & (1 << ( ( 64-cPC1[i]) % 8 ) ) ){
+        result[i] |=( 1LL<< (55-i)*1L );
+    }
+
+    // keyPlus = keyPlus + 1L;
+    // __syncthreads();
+
+    // result[0] = keyPlus;
+    // printf("++ %lu\n", keyPlus);
+}
 
 
 ull generateKeyPlus(){
-    ull keyPlus=0L;
-    int j=0;
-    #pragma omp parallel num_threads(2)
-    {
-        #pragma omp for
-        for(int i=56-1;i>=0;i--){
-            if( iniKey[ PC1[i]/8 ] & (1 << ( ( 64-PC1[i]) % 8 ) ) ){
-                keyPlus|=( 1LL<< (55-i)*1L );
-            }
-            j++;
-        }
+    //host copies iniKey and PC1 arrays
+    ull *result;
+    ull keyPlus, *d_iniKey, *d_result;
+    int *d_PC1;
+    int sizeIniKey = 8 * sizeof(ull);
+    int sizePC1 = 56 * sizeof( int );
+    int sizeKeyPlus = 56 * sizeof( ull );
     
+    //alloc space for host copies
+    cudaMalloc( (void **)&d_iniKey, sizeIniKey );
+    cudaMalloc( (void **)&d_PC1, sizePC1 );
+    cudaMalloc( (void **)&d_result, sizeKeyPlus);
+
+    //set up input values
+    keyPlus = 0L;
+    result = (ull *)malloc(sizeKeyPlus);
+
+    //copy inputs to device
+    cudaMemcpy(d_iniKey,iniKey,sizeIniKey,cudaMemcpyHostToDevice);
+    cudaMemcpy(d_PC1,PC1,sizePC1,cudaMemcpyHostToDevice);
+    cudaMemcpy(d_result,result,sizeKeyPlus,cudaMemcpyHostToDevice);
+
+    //launch kernel on GPU
+    createKeyPlus<<<1,56>>>(d_iniKey,d_PC1, d_result );
+
+    //copy result back
+    cudaMemcpy(result,d_result,sizeKeyPlus,cudaMemcpyDeviceToHost);
+
+    for(int i=0;i<56;i++){
+        keyPlus |= result[i];
     }
+
+    // keyPlus = result[0];
+    free(result);
+    cudaFree(d_iniKey); cudaFree(d_PC1);
+    // printf("After KEY %llu\n",keyPlus);
     return keyPlus;
 }
 
@@ -245,23 +285,56 @@ void generateKeysBlocks(){
 
 }
 
-ull generateIniPer(){
-    ull keyPlus=0L;
-    int j=0;
+__global__ void createIniPair( ull *cMessage, int *cIniPer, ull *result){
 
-    #pragma omp parallel num_threads(2)
-    {
-        #pragma omp for
-        for(int i=64-1;i>=0;i--){
-            if( message[ (IniPer[i]/8) >=8 ? 7: (IniPer[i]/8) ]  & (1LL << ( ( 64-IniPer[i]) % 8 ) ) ){
-                keyPlus|=( 1LL<< j*1L );
-            }
-        j++;
-        }
+    int i = threadIdx.x + blockIdx.x * blockDim.x;
+
+    if( cMessage[ (cIniPer[i]/8) >=8 ? 7: (cIniPer[i]/8) ]  & (1LL << ( ( 64-cIniPer[i]) % 8 ) ) ){
+        result[i] |=( 1LL<< (63-i)*1L );
     }
+
+
+}
+
+
+ull generateIniPer(){
+
+        //host copies iniKey and PC1 arrays
+        ull *result;
+        ull keyPlus, *d_result, *d_message;
+        int *d_iniPer;
+        int sizeMessage = 8 * sizeof( ull );
+        int sizeiniPer = 64 * sizeof( int );
+        int sizeKeyPlus = 64 * sizeof( ull );
+        
+        //alloc space for host copies
+        cudaMalloc( (void **)&d_message, sizeMessage);
+        cudaMalloc( (void **)&d_iniPer, sizeiniPer );
+        cudaMalloc( (void **)&d_result, sizeKeyPlus);
+        
     
+        //set up input values
+        keyPlus = 0L;
+        result = (ull *)malloc(sizeKeyPlus);
     
-    return keyPlus;
+        //copy inputs to device
+        cudaMemcpy(d_message,message,sizeMessage,cudaMemcpyHostToDevice);
+        cudaMemcpy(d_iniPer,IniPer,sizeiniPer,cudaMemcpyHostToDevice);
+        cudaMemcpy(d_result,result,sizeKeyPlus,cudaMemcpyHostToDevice);
+    
+        //launch kernel on GPU
+        createIniPair<<<1,64>>>(d_message,d_iniPer, d_result );
+    
+        //copy result back
+        cudaMemcpy(result,d_result,sizeKeyPlus,cudaMemcpyDeviceToHost);
+    
+        for(int i=0;i<64;i++){
+            keyPlus |= result[i];
+        }
+    
+        free(result);
+        cudaFree(d_iniPer); cudaFree(d_message);
+        return keyPlus;
 }
 
 ull expandRn(ull Rn){
@@ -371,6 +444,7 @@ ull reverseLnRn( uull LnRn){
 
     return ( Rn<<32L) | Ln;
 }
+
 
 ull generateCipherMessage( ull RnLn ){
 
