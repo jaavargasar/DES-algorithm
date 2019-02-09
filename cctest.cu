@@ -1,12 +1,11 @@
 #include<bits/stdc++.h>
-#include "omp.h"
 
 using namespace std;
 
 typedef unsigned long long ull;
 typedef pair< ull , ull>  uull;
 
-const ull MAX = 100000; // 1000000
+const ull MAX = 10;
 
 
 uull LnRnBlocks[17]; // from l0r0 to l16r16
@@ -15,8 +14,7 @@ uull CnDnBlocks[17]; //from c0d0 to c16d16
 
 ull keysBlocks[16];  //from key[1] = k0 to key[16] = k15
 
-ull allCipherDES[100000];
-
+ull allCipherDES[1000000];
 
 const ull Rotations[16] = {
     1, 1, 2, 2, 2, 2, 2, 2, 1, 2, 2, 2, 2, 2, 2, 1
@@ -151,62 +149,15 @@ const ull iniKey[8] = {
 const ull message[8] = {    
     0x01,0x23,0x45,0x67,0x89,0xAB,0xCD,0xEF};
 
-__global__ void createKeyPlus( ull *cIniKey, int *cPC1, ull *result){
-    // __shared__ ull keyPlus;
-
-    // keyPlus = 0L;
-    // __syncthreads();
-
-    int i = threadIdx.x + blockIdx.x * blockDim.x;
-    if( cIniKey[ cPC1[i]/8 ] & (1 << ( ( 64-cPC1[i]) % 8 ) ) ){
-        result[i] |=( 1LL<< (55-i)*1L );
-    }
-
-    // keyPlus = keyPlus + 1L;
-    // __syncthreads();
-
-    // result[0] = keyPlus;
-    // printf("++ %lu\n", keyPlus);
-}
 
 
 ull generateKeyPlus(){
-    //host copies iniKey and PC1 arrays
-    ull *result;
-    ull keyPlus, *d_iniKey, *d_result;
-    int *d_PC1;
-    int sizeIniKey = 8 * sizeof(ull);
-    int sizePC1 = 56 * sizeof( int );
-    int sizeKeyPlus = 56 * sizeof( ull );
-    
-    //alloc space for host copies
-    cudaMalloc( (void **)&d_iniKey, sizeIniKey );
-    cudaMalloc( (void **)&d_PC1, sizePC1 );
-    cudaMalloc( (void **)&d_result, sizeKeyPlus);
-
-    //set up input values
-    keyPlus = 0L;
-    result = (ull *)malloc(sizeKeyPlus);
-
-    //copy inputs to device
-    cudaMemcpy(d_iniKey,iniKey,sizeIniKey,cudaMemcpyHostToDevice);
-    cudaMemcpy(d_PC1,PC1,sizePC1,cudaMemcpyHostToDevice);
-    cudaMemcpy(d_result,result,sizeKeyPlus,cudaMemcpyHostToDevice);
-
-    //launch kernel on GPU
-    createKeyPlus<<<1,56>>>(d_iniKey,d_PC1, d_result );
-
-    //copy result back
-    cudaMemcpy(result,d_result,sizeKeyPlus,cudaMemcpyDeviceToHost);
-
-    for(int i=0;i<56;i++){
-        keyPlus |= result[i];
+    ull keyPlus=0L;
+    for(int i=56-1;i>=0;i--){
+        if( iniKey[ PC1[i]/8 ] & (1 << ( ( 64-PC1[i]) % 8 ) ) ){
+            keyPlus|=( 1LL<< (55-i)*1L );
+        }
     }
-
-    // keyPlus = result[0];
-    free(result);
-    cudaFree(d_iniKey); cudaFree(d_PC1);
-    // printf("After KEY %llu\n",keyPlus);
     return keyPlus;
 }
 
@@ -268,83 +219,40 @@ ull joinCnDn(ull cn, ull dn){ return (cn<<28) | dn; }
 
 void generateKeysBlocks(){
     ull cnDn, keyn;
-    ull k;
 
     for(int i=1;i<=16;i++){
         cnDn = joinCnDn( CnDnBlocks[i].first, CnDnBlocks[i].second );
-        keyn = 0L; k=0L;
+        keyn = 0L;
 
         for(int j=48-1;j>=0;j--){
             if( cnDn & ( 1LL << (56-PC2[j])*1L ) ) {
-                 keyn|= ( 1LL<< k );
+                 keyn|= ( 1LL<< (47-j)*1L );
             }
-            k++;
         }
         keysBlocks[i-1] = keyn;
     }
 
 }
 
-__global__ void createIniPair( ull *cMessage, int *cIniPer, ull *result){
-
-    int i = threadIdx.x + blockIdx.x * blockDim.x;
-
-    if( cMessage[ (cIniPer[i]/8) >=8 ? 7: (cIniPer[i]/8) ]  & (1LL << ( ( 64-cIniPer[i]) % 8 ) ) ){
-        result[i] |=( 1LL<< (63-i)*1L );
-    }
-
-
-}
-
-
 ull generateIniPer(){
+    ull keyPlus=0L;
 
-        //host copies iniKey and PC1 arrays
-        ull *result;
-        ull keyPlus, *d_result, *d_message;
-        int *d_iniPer;
-        int sizeMessage = 8 * sizeof( ull );
-        int sizeiniPer = 64 * sizeof( int );
-        int sizeKeyPlus = 64 * sizeof( ull );
-        
-        //alloc space for host copies
-        cudaMalloc( (void **)&d_message, sizeMessage);
-        cudaMalloc( (void **)&d_iniPer, sizeiniPer );
-        cudaMalloc( (void **)&d_result, sizeKeyPlus);
-        
-    
-        //set up input values
-        keyPlus = 0L;
-        result = (ull *)malloc(sizeKeyPlus);
-    
-        //copy inputs to device
-        cudaMemcpy(d_message,message,sizeMessage,cudaMemcpyHostToDevice);
-        cudaMemcpy(d_iniPer,IniPer,sizeiniPer,cudaMemcpyHostToDevice);
-        cudaMemcpy(d_result,result,sizeKeyPlus,cudaMemcpyHostToDevice);
-    
-        //launch kernel on GPU
-        createIniPair<<<1,64>>>(d_message,d_iniPer, d_result );
-    
-        //copy result back
-        cudaMemcpy(result,d_result,sizeKeyPlus,cudaMemcpyDeviceToHost);
-    
-        for(int i=0;i<64;i++){
-            keyPlus |= result[i];
+    for(int i=64-1;i>=0;i--){
+        if( message[ (IniPer[i]/8) >=8 ? 7: (IniPer[i]/8) ]  & (1LL << ( ( 64-IniPer[i]) % 8 ) ) ){
+            keyPlus|=( 1LL<< (63-i)*1L );
         }
+    }
     
-        free(result);
-        cudaFree(d_iniPer); cudaFree(d_message);
-        return keyPlus;
+    return keyPlus;
 }
 
 ull expandRn(ull Rn){
     //from a Rn 32 bit to a Kn 48 bit
-    ull k=0L, exRn=0L;
+    ull exRn=0L;
     for(int j=48-1;j>=0;j--){
             if( Rn & ( 1LL << (32-Expansion[j])*1L ) ) {
-                 exRn|= ( 1LL<< k );
+                 exRn|= ( 1LL<< (47-j)*1L );
             }
-            k++;
     }
     return exRn;
 }
@@ -406,12 +314,11 @@ ull generateSboxCombination(ull Bn){
 
 ull generateFalgorithm(ull snBn){
 
-    ull k=0L, fn=0L;
+    ull fn=0L;
     for(int j=32-1;j>=0;j--){
             if( snBn & ( 1LL << (32-Pbox[j])*1L ) ) {
-                 fn|= ( 1LL<< k );
+                 fn|= ( 1LL<< (31-j)*1L );
             }
-            k++;
     }
     return fn;
 }
@@ -445,30 +352,14 @@ ull reverseLnRn( uull LnRn){
     return ( Rn<<32L) | Ln;
 }
 
-
 ull generateCipherMessage( ull RnLn ){
 
-    ull k=0L, cipher=0L;
-
-
-    // #pragma omp parallel num_threads(2)
-    // {
-    //     #pragma omp for
-    //     for(int j=64-1;j>=0;j--){
-    //         if( RnLn & ( 1LL << (64-reverseIniPer[j])*1L ) ) {
-    //              cipher|= ( 1LL<< k );
-    //         }
-    //         k++;
-    //     }
-    // }
+    ull cipher=0L;
     for(int j=64-1;j>=0;j--){
-        if( RnLn & ( 1LL << (64-reverseIniPer[j])*1L ) ) {
-             cipher|= ( 1LL<< k );
-        }
-        k++;
+            if( RnLn & ( 1LL << (64-reverseIniPer[j])*1L ) ) {
+                 cipher|= ( 1LL<< (63-j)*1L );
+            }
     }
-    
-    
     return cipher;
 }
 
@@ -493,36 +384,17 @@ ull cipherDES(){
     return cipherMessage;
 }
 
-string converLongToString(ull number){
-
-    string result ="";
-    string ans ="";
-    while( number > 0){
-        result += number%10 + '0';
-        cout<<result<<endl;
-        number/=10LL;
-    }
-    
-    for(int i=result.size();i>=0;i--){
-        ans+=result[i];
-    }
-    return ans;
-
-}
-
-
 int main(){
 
 
-    // #pragma omp parallel for
     for(int i=0;i<MAX;i++){
         allCipherDES[ i ] = cipherDES();
     }
 
-    //  for(int i=0;i<MAX;i++){
-    //      printf("cipher: %llX\n", allCipherDES[i] );
-    //      fflush(stdout);
-    //  }
+    for(int i=0;i<MAX;i++){
+        printf("cipher: %llX\n", allCipherDES[i] );
+        fflush(stdout);
+    }
 
     return 0;
 }
