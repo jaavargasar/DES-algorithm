@@ -3,14 +3,13 @@
 using namespace std;
 
 typedef unsigned long long ull;
-typedef pair< ull , ull>  uull;
 
 const ull MAX = 10;
 
 
-uull LnRnBlocks[17]; // from l0r0 to l16r16
+ull LnRnBlocks[17*2]; // from l0r0 to l16r16
 
-uull CnDnBlocks[17]; //from c0d0 to c16d16
+ull CnDnBlocks[17*2]; //from c0d0 to c16d16
 
 ull keysBlocks[16];  //from key[1] = k0 to key[16] = k15
 
@@ -140,28 +139,31 @@ __host__ __device__ ull generateKeyPlus(ull *d_iniKey, int *d_PC1){
     return keyPlus;
 }
 
-__host__ __device__ uull splitKeyPlus(ull keyPlus){
+__host__ __device__ ull* splitKeyPlus(ull keyPlus){
     ull c0=0L, d0=0L;
 
     for(int i=0;i<28;i++){
         if(keyPlus & (1LL<<i*1L ) ) d0|=(1LL<<i*1L);
         if(keyPlus & (1LL<< i*1L +28L ) ) c0|=(1LL<<i*1L);
     }
-    return make_pair( c0, d0);
+    ull new_array[2]= {c0,d0};
+    return new_array;
 }
 
-__host__ __device__ uull splitIniPer(ull codeIniPer){
+__host__ __device__ ull* splitIniPer(ull codeIniPer){
     ull l0=0L, r0=0L;
 
     for(int i=0;i<32;i++){
         if(codeIniPer & (1LL<<i*1L ) ) r0|=(1LL<<i*1L);
         if(codeIniPer & (1LL<< i*1L +32L ) ) l0|=(1LL<<i*1L);
     }
-    return make_pair( l0, r0);
+    ull new_array[2] ={ l0,r0};
+    return new_array;
 }
 
-__host__ __device__ void generateCnDnBlocks( uull seedKey,uull *d_CnDnBlocks, ull *d_Rotations){
-    d_CnDnBlocks[0] = seedKey;
+__host__ __device__ void generateCnDnBlocks( ull *seedKey,ull *d_CnDnBlocks, ull *d_Rotations){
+    d_CnDnBlocks[0] = seedKey[0];
+    d_CnDnBlocks[1] = seedKey[1];
     ull cn ,dn, newCn, newDn;
     ull getOnCn, getOnDn;
 
@@ -170,8 +172,8 @@ __host__ __device__ void generateCnDnBlocks( uull seedKey,uull *d_CnDnBlocks, ul
         getOnCn = 0L;
         getOnDn = 0L;
 
-        cn = d_CnDnBlocks[i-1].first ;
-        dn = d_CnDnBlocks[i-1].second;
+        cn = d_CnDnBlocks[(i*2+0)-2];
+        dn = d_CnDnBlocks[(i*2+1)-2];
 
         for(ull j=0;j< d_Rotations[ i-1 ];j++){
 
@@ -189,18 +191,19 @@ __host__ __device__ void generateCnDnBlocks( uull seedKey,uull *d_CnDnBlocks, ul
         }
         newCn |= ( getOnCn );
         newDn |= ( getOnDn );
-        d_CnDnBlocks[ i ] = make_pair( newCn, newDn);
+        d_CnDnBlocks[ (i*2)+0 ] = newCn;
+        d_CnDnBlocks[ (i*2)+1 ] = newDn;
     }
 
 }
 
 __host__ __device__ ull joinCnDn(ull cn, ull dn){ return (cn<<28) | dn; }
 
-__host__ __device__ void generateKeysBlocks(uull *d_CnDnBlocks, int *d_PC2,ull *d_keysBlocks){
+__host__ __device__ void generateKeysBlocks(ull *d_CnDnBlocks, int *d_PC2,ull *d_keysBlocks){
     ull cnDn, keyn;
 
     for(int i=1;i<=16;i++){
-        cnDn = joinCnDn( d_CnDnBlocks[i].first, d_CnDnBlocks[i].second );
+        cnDn = joinCnDn( d_CnDnBlocks[i*2+0], d_CnDnBlocks[i*2+1] );
         keyn = 0L;
 
         for(int j=48-1;j>=0;j--){
@@ -302,31 +305,32 @@ __host__ __device__ ull generateFalgorithm(ull snBn, int *d_Pbox){
     return fn;
 }
 
-__host__ __device__ void generateLnRnBlocks(uull L0R0,uull *d_LnRnBlocks, ull *d_keysBlocks,int *d_Expansion, int *d_Sbox,int *d_Pbox){
+__host__ __device__ void generateLnRnBlocks(ull *L0R0,ull *d_LnRnBlocks, ull *d_keysBlocks,int *d_Expansion, int *d_Sbox,int *d_Pbox){
 
-    d_LnRnBlocks[0] = L0R0;
+    d_LnRnBlocks[0] = L0R0[0];
+    d_LnRnBlocks[1] = L0R0[1];
     ull fn;
 
     for(int time=1; time<=16;time++){
 
-        ull Ln = d_LnRnBlocks[ time-1 ].first;
-        ull Rn = d_LnRnBlocks[ time-1 ].second;
+        ull Ln = d_LnRnBlocks[ (time*2+0)-2 ];
+        ull Rn = d_LnRnBlocks[ (time*2+1)-2 ];
        
         ull snBn = 
             generateSboxCombination( xorOperation( expandRn( Rn, d_Expansion ),d_keysBlocks[ time-1 ] ),d_Sbox );
         
         fn = generateFalgorithm(snBn,d_Pbox);
 
-        uull LnRn = make_pair( Rn, (Ln ^ fn) ); 
-        d_LnRnBlocks[ time ] = LnRn;
+        d_LnRnBlocks[ (time*2+0) ] = Rn;
+        d_LnRnBlocks[ (time*2+1) ] = (Ln ^ fn);
 
     }
 
 }
 
-__host__ __device__ ull reverseLnRn( uull LnRn){
-    ull Ln = LnRn.first;
-    ull Rn = LnRn.second;
+__host__ __device__ ull reverseLnRn( ull *LnRn, ull *LnRn1){
+    ull Ln = *LnRn;
+    ull Rn = *LnRn1;
 
     return ( Rn<<32L) | Ln;
 }
@@ -344,8 +348,8 @@ __host__ __device__ ull generateCipherMessage( ull RnLn, int *d_reverseIniPer ){
 
 
 __global__ void cipherDES(
-    uull *d_LnRnBlocks,
-    uull *d_CnDnBlocks,
+    ull *d_LnRnBlocks,
+    ull *d_CnDnBlocks,
     ull *d_keysBlocks,
     ull *d_allCipherDES,
     ull *d_Rotations,
@@ -359,15 +363,15 @@ __global__ void cipherDES(
     ull *d_iniKey,
     ull *d_message
 ){
-    uull keyHalves = splitKeyPlus( generateKeyPlus(d_iniKey,d_PC1) );
+    ull *keyHalves = splitKeyPlus( generateKeyPlus(d_iniKey,d_PC1) );
     generateCnDnBlocks( keyHalves,d_CnDnBlocks,d_Rotations );
     generateKeysBlocks(d_CnDnBlocks,d_PC2,d_keysBlocks);
-    uull iniPerHalves = splitIniPer(generateIniPer(d_IniPer,d_message) ); //got L0 and R0
+    ull *iniPerHalves = splitIniPer(generateIniPer(d_IniPer,d_message) ); //got L0 and R0
     
 
     generateLnRnBlocks( iniPerHalves,d_LnRnBlocks, d_keysBlocks, d_Expansion, d_Sbox, d_Pbox);
 
-    ull revLnRn = reverseLnRn( d_LnRnBlocks[16] );
+    ull revLnRn = reverseLnRn( &d_LnRnBlocks[16*2+0],&d_LnRnBlocks[16*2+1] );
    
     ull cipherMessage = generateCipherMessage( revLnRn,d_reverseIniPer );
     // // printf("cipher: %llu\n",cipherMessage);
@@ -381,8 +385,8 @@ __global__ void cipherDES(
 int main(){
 
     //host and devices copies
-    uull *d_LnRnBlocks;//17 size
-    uull *d_CnDnBlocks;//17 size
+    ull *d_LnRnBlocks;//17 size
+    ull *d_CnDnBlocks;//17 size
     ull *d_keysBlocks;//16 size
     ull *d_allCipherDES;//10^6 size
     ull *d_Rotations;//16 size
@@ -397,8 +401,8 @@ int main(){
     ull *d_message;//8 size
 
     //size of host and device copies
-    int sd_LnRnBlocks = 17 * sizeof(uull);
-    int sd_CnDnBlocks = 17 * sizeof(uull);
+    int sd_LnRnBlocks = 17 * 2 * sizeof(ull);
+    int sd_CnDnBlocks = 17 * 2 * sizeof(ull);
     int sd_keysBlocks = 16 * sizeof(ull);
     int sd_allCipherDES = 1000000 * sizeof(ull);
     int sd_Rotations = 16 * sizeof(ull);
