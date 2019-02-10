@@ -4,7 +4,8 @@ using namespace std;
 
 typedef unsigned long long ull;
 
-const ull MAX = 10;
+int MAX = 100000;
+int THREADS_BLOCK = 190;
 
 
 ull LnRnBlocks[17*2]; // from l0r0 to l16r16
@@ -377,7 +378,8 @@ __global__ void cipherDES(
     // // printf("cipher: %llu\n",cipherMessage);
     // // fflush(stdout);
 
-    printf("Hex Cipher: %llX\n", cipherMessage);
+    int iindex = threadIdx.x + blockIdx.x * blockDim.x;
+    printf("Index %i - Hex Cipher: %llX\n", iindex, cipherMessage);
    
     // return cipherMessage;
 }
@@ -449,7 +451,7 @@ int main(){
     cudaMemcpy(d_message,message,sd_message,cudaMemcpyHostToDevice);
     
     //launch kernel     ----------- HERES THE MAGIC ---------
-    cipherDES<<<1,1>>>(
+    cipherDES<<<MAX/THREADS_BLOCK,THREADS_BLOCK>>>(
         d_LnRnBlocks,
         d_CnDnBlocks,
         d_keysBlocks,
