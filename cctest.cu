@@ -364,37 +364,141 @@ ull generateCipherMessage( ull RnLn ){
 }
 
 
-ull cipherDES(){
-    uull keyHalves = splitKeyPlus( generateKeyPlus() );
-    generateCnDnBlocks( keyHalves );
-    generateKeysBlocks();
-    uull iniPerHalves = splitIniPer(generateIniPer() ); //got L0 and R0
+__global__ void cipherDES(
+    uull *LnRnBlocks,
+    uull *CnDnBlocks,
+    ull *keysBlocks,
+    ull *allCipherDES,
+    ull *Rotations,
+    int *PC1,
+    int *PC2,
+    int *IniPer,
+    int *reverseIniPer,
+    int *Expansion,
+    int *Pbox,
+    int *Sbox,
+    ull *iniKey,
+    ull *message
+){
+    // uull keyHalves = splitKeyPlus( generateKeyPlus() );
+    // generateCnDnBlocks( keyHalves );
+    // generateKeysBlocks();
+    // uull iniPerHalves = splitIniPer(generateIniPer() ); //got L0 and R0
     
 
-    generateLnRnBlocks( iniPerHalves );
+    // generateLnRnBlocks( iniPerHalves );
 
-    ull revLnRn = reverseLnRn( LnRnBlocks[16] );
+    // ull revLnRn = reverseLnRn( LnRnBlocks[16] );
    
-    ull cipherMessage = generateCipherMessage( revLnRn );
-    // printf("cipher: %llu\n",cipherMessage);
-    // fflush(stdout);
+    // ull cipherMessage = generateCipherMessage( revLnRn );
+    // // printf("cipher: %llu\n",cipherMessage);
+    // // fflush(stdout);
 
-    // printf("Hex Cipher: %llX\n", cipherMessage);
-    // fflush(stdout);
-    return cipherMessage;
+    // // printf("Hex Cipher: %llX\n", cipherMessage);
+    // // fflush(stdout);
+    // return cipherMessage;
+    printf("helloooooooooooooo there %i\n",PC1[10]);
 }
 
 int main(){
 
+    //host and devices copies
+    uull *d_LnRnBlocks;//17 size
+    uull *d_CnDnBlocks;//17 size
+    ull *d_keysBlocks;//16 size
+    ull *d_allCipherDES;//10^6 size
+    ull *d_Rotations;//16 size
+    int *d_PC1;//56 size
+    int *d_PC2;//48 size
+    int *d_IniPer;//64 size
+    int *d_reverseIniPer;//64 size
+    int *d_Expansion;//48 size
+    int *d_Pbox;//32 size
+    int *d_Sbox;//8*8*16 size [8][4][16]
+    ull *d_iniKey;//8 size
+    ull *d_message;//8 size
 
-    for(int i=0;i<MAX;i++){
-        allCipherDES[ i ] = cipherDES();
-    }
+    //size of host and device copies
+    int sd_LnRnBlocks = 17 * sizeof(uull);
+    int sd_CnDnBlocks = 17 * sizeof(uull);
+    int sd_keysBlocks = 16 * sizeof(ull);
+    int sd_allCipherDES = 1000000 * sizeof(ull);
+    int sd_Rotations = 16 * sizeof(ull);
+    int sd_PC1 = 56 * sizeof(int);
+    int sd_PC2 = 48 * sizeof(int);
+    int sd_IniPer = 64 * sizeof(int);
+    int sd_reverseIniPer = 64 * sizeof(int);
+    int sd_Expansion = 48 * sizeof(int);
+    int sd_Pbox = 32 * sizeof(int);
+    int sd_Sbox = 512 * sizeof(int);
+    int sd_iniKey = 8 * sizeof(ull);
+    int sd_message = 8 * sizeof(ull);
 
-    for(int i=0;i<MAX;i++){
-        printf("cipher: %llX\n", allCipherDES[i] );
-        fflush(stdout);
-    }
+    //alloc space for host and device copies
+    cudaMalloc( (void **)&d_LnRnBlocks, sd_LnRnBlocks );
+    cudaMalloc( (void **)&d_CnDnBlocks, sd_CnDnBlocks );
+    cudaMalloc( (void **)&d_keysBlocks, sd_keysBlocks );
+    cudaMalloc( (void **)&d_allCipherDES, sd_allCipherDES );
+    cudaMalloc( (void **)&d_Rotations, sd_Rotations );
+    cudaMalloc( (void **)&d_PC1, sd_PC1 );
+    cudaMalloc( (void **)&d_PC2, sd_PC2 );
+    cudaMalloc( (void **)&d_IniPer, sd_IniPer );
+    cudaMalloc( (void **)&d_reverseIniPer, sd_reverseIniPer );
+    cudaMalloc( (void **)&d_Expansion, sd_Expansion );
+    cudaMalloc( (void **)&d_Pbox, sd_Pbox );
+    cudaMalloc( (void **)&d_Sbox, sd_Sbox );
+    cudaMalloc( (void **)&d_iniKey, sd_iniKey );
+    cudaMalloc( (void **)&d_message, sd_message );
+
+    //copy inputs to device
+    cudaMemcpy(d_LnRnBlocks,LnRnBlocks,sd_LnRnBlocks,cudaMemcpyHostToDevice);
+    cudaMemcpy(d_CnDnBlocks,CnDnBlocks,sd_CnDnBlocks,cudaMemcpyHostToDevice);
+    cudaMemcpy(d_keysBlocks,keysBlocks,sd_keysBlocks,cudaMemcpyHostToDevice);
+    cudaMemcpy(d_allCipherDES,allCipherDES,sd_allCipherDES,cudaMemcpyHostToDevice);
+    cudaMemcpy(d_Rotations,Rotations,sd_Rotations,cudaMemcpyHostToDevice);
+    cudaMemcpy(d_PC1,PC1,sd_PC1,cudaMemcpyHostToDevice);
+    cudaMemcpy(d_PC2,PC2,sd_PC2,cudaMemcpyHostToDevice);
+    cudaMemcpy(d_IniPer,IniPer,sd_IniPer,cudaMemcpyHostToDevice);
+    cudaMemcpy(d_reverseIniPer,reverseIniPer,sd_reverseIniPer,cudaMemcpyHostToDevice);
+    cudaMemcpy(d_Expansion,Expansion,sd_Expansion,cudaMemcpyHostToDevice);
+    cudaMemcpy(d_Pbox,Pbox,sd_Pbox,cudaMemcpyHostToDevice);
+    cudaMemcpy(d_Sbox,Sbox,sd_Sbox,cudaMemcpyHostToDevice);
+    cudaMemcpy(d_iniKey,iniKey,sd_iniKey,cudaMemcpyHostToDevice);
+    cudaMemcpy(d_message,message,sd_message,cudaMemcpyHostToDevice);
+    
+    //launch kernel     ----------- HERES THE MAGIC ---------
+    cipherDES<<<1,1>>>(
+        d_LnRnBlocks,
+        d_CnDnBlocks,
+        d_keysBlocks,
+        d_allCipherDES,
+        d_Rotations,
+        d_PC1,
+        d_PC2,
+        d_IniPer,
+        d_reverseIniPer,
+        d_Expansion,
+        d_Pbox,
+        d_Sbox,
+        d_iniKey,
+        d_message
+    );
+
+    //free cuda space
+    cudaFree(d_LnRnBlocks);
+    cudaFree(d_CnDnBlocks);
+    cudaFree(d_keysBlocks);
+    cudaFree(d_allCipherDES);
+    cudaFree(d_Rotations);
+    cudaFree(d_PC1);
+    cudaFree(d_PC2);
+    cudaFree(d_IniPer);
+    cudaFree(d_reverseIniPer);
+    cudaFree(d_Expansion);
+    cudaFree(d_Pbox);
+    cudaFree(d_Sbox);
+    cudaFree(d_iniKey);
+    cudaFree(d_message);
 
     return 0;
 }
