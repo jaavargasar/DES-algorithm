@@ -130,10 +130,10 @@ ull message[8] = {
 
 
 
-__host__ __device__ ull generateKeyPlus(ull *iniKey, int *PC1){
+__host__ __device__ ull generateKeyPlus(ull *d_iniKey, int *d_PC1){
     ull keyPlus=0L;
     for(int i=56-1;i>=0;i--){
-        if( iniKey[ PC1[i]/8 ] & (1 << ( ( 64-PC1[i]) % 8 ) ) ){
+        if( d_iniKey[ d_PC1[i]/8 ] & (1 << ( ( 64-d_PC1[i]) % 8 ) ) ){
             keyPlus|=( 1LL<< (55-i)*1L );
         }
     }
@@ -160,8 +160,8 @@ __host__ __device__ uull splitIniPer(ull codeIniPer){
     return make_pair( l0, r0);
 }
 
-__host__ __device__ void generateCnDnBlocks( uull seedKey,uull *CnDnBlocks, ull *Rotations){
-    CnDnBlocks[0] = seedKey;
+__host__ __device__ void generateCnDnBlocks( uull seedKey,uull *d_CnDnBlocks, ull *d_Rotations){
+    d_CnDnBlocks[0] = seedKey;
     ull cn ,dn, newCn, newDn;
     ull getOnCn, getOnDn;
 
@@ -170,54 +170,54 @@ __host__ __device__ void generateCnDnBlocks( uull seedKey,uull *CnDnBlocks, ull 
         getOnCn = 0L;
         getOnDn = 0L;
 
-        cn = CnDnBlocks[i-1].first ;
-        dn = CnDnBlocks[i-1].second;
+        cn = d_CnDnBlocks[i-1].first ;
+        dn = d_CnDnBlocks[i-1].second;
 
-        for(ull j=0;j< Rotations[ i-1 ];j++){
+        for(ull j=0;j< d_Rotations[ i-1 ];j++){
 
-            if(  cn & (1 << (27-j) )  ) getOnCn|= 1LL << (Rotations[ i-1 ]==1 ? j: 1-j) ;
-            if(  dn & (1 << (27-j) )  ) getOnDn|= 1LL << (Rotations[ i-1 ]==1 ? j: 1-j);
+            if(  cn & (1 << (27-j) )  ) getOnCn|= 1LL << (d_Rotations[ i-1 ]==1 ? j: 1-j) ;
+            if(  dn & (1 << (27-j) )  ) getOnDn|= 1LL << (d_Rotations[ i-1 ]==1 ? j: 1-j);
 
         }
 
-        newCn = cn << Rotations[ i-1 ];
-        newDn = dn << Rotations[ i-1 ];
+        newCn = cn << d_Rotations[ i-1 ];
+        newDn = dn << d_Rotations[ i-1 ];
 
-        for(ull j=0; j< Rotations[ i-1 ] ;j++){
+        for(ull j=0; j< d_Rotations[ i-1 ] ;j++){
             newCn &= ~(1<< (28+j) );
             newDn &= ~(1<< (28+j) );
         }
         newCn |= ( getOnCn );
         newDn |= ( getOnDn );
-        CnDnBlocks[ i ] = make_pair( newCn, newDn);
+        d_CnDnBlocks[ i ] = make_pair( newCn, newDn);
     }
 
 }
 
 __host__ __device__ ull joinCnDn(ull cn, ull dn){ return (cn<<28) | dn; }
 
-__host__ __device__ void generateKeysBlocks(uull *CnDnBlocks, int *PC2,ull *keysBlocks){
+__host__ __device__ void generateKeysBlocks(uull *d_CnDnBlocks, int *d_PC2,ull *d_keysBlocks){
     ull cnDn, keyn;
 
     for(int i=1;i<=16;i++){
-        cnDn = joinCnDn( CnDnBlocks[i].first, CnDnBlocks[i].second );
+        cnDn = joinCnDn( d_CnDnBlocks[i].first, d_CnDnBlocks[i].second );
         keyn = 0L;
 
         for(int j=48-1;j>=0;j--){
-            if( cnDn & ( 1LL << (56-PC2[j])*1L ) ) {
+            if( cnDn & ( 1LL << (56-d_PC2[j])*1L ) ) {
                  keyn|= ( 1LL<< (47-j)*1L );
             }
         }
-        keysBlocks[i-1] = keyn;
+        d_keysBlocks[i-1] = keyn;
     }
 
 }
 
-__host__ __device__ ull generateIniPer(int *IniPer, ull *message){
+__host__ __device__ ull generateIniPer(int *d_IniPer, ull *d_message){
     ull keyPlus=0L;
 
     for(int i=64-1;i>=0;i--){
-        if( message[ (IniPer[i]/8) >=8 ? 7: (IniPer[i]/8) ]  & (1LL << ( ( 64-IniPer[i]) % 8 ) ) ){
+        if( d_message[ (d_IniPer[i]/8) >=8 ? 7: (d_IniPer[i]/8) ]  & (1LL << ( ( 64-d_IniPer[i]) % 8 ) ) ){
             keyPlus|=( 1LL<< (63-i)*1L );
         }
     }
@@ -225,11 +225,11 @@ __host__ __device__ ull generateIniPer(int *IniPer, ull *message){
     return keyPlus;
 }
 
-__host__ __device__ ull expandRn(ull Rn,int *Expansion){
+__host__ __device__ ull expandRn(ull Rn,int *d_Expansion){
     //from a Rn 32 bit to a Kn 48 bit
     ull exRn=0L;
     for(int j=48-1;j>=0;j--){
-            if( Rn & ( 1LL << (32-Expansion[j])*1L ) ) {
+            if( Rn & ( 1LL << (32-d_Expansion[j])*1L ) ) {
                  exRn|= ( 1LL<< (47-j)*1L );
             }
     }
@@ -240,7 +240,7 @@ __host__ __device__ ull xorOperation(ull En, ull Kn){
     return (Kn ^ En);
 }
 
-__host__ __device__ ull getSboxNumber(int Bn, int k, int *Sbox){
+__host__ __device__ ull getSboxNumber(int Bn, int k, int *d_Sbox){
 
     int row=0,col=0;
     if( Bn & 1<<0 ) row |= ( 1<<0);
@@ -250,11 +250,11 @@ __host__ __device__ ull getSboxNumber(int Bn, int k, int *Sbox){
         if( Bn & 1<<i ) col |=(1<<(i-1));
     }
 
-    return Sbox[ (k*4*16)+(row*16)+col ];
+    return d_Sbox[ (k*4*16)+(row*16)+col ];
 }
 
 
-__host__ __device__ ull generateSboxCombination(ull Bn,int *Sbox){
+__host__ __device__ ull generateSboxCombination(ull Bn,int *d_Sbox){
 
     int Bbox[8];
     ull sbBox[8];
@@ -276,7 +276,7 @@ __host__ __device__ ull generateSboxCombination(ull Bn,int *Sbox){
     }
 
     for(int i=0;i<8;i++){
-        sbBox[i] = getSboxNumber( Bbox[i], i,Sbox);
+        sbBox[i] = getSboxNumber( Bbox[i], i,d_Sbox);
 
        
     }
@@ -291,34 +291,34 @@ __host__ __device__ ull generateSboxCombination(ull Bn,int *Sbox){
 
 }
 
-__host__ __device__ ull generateFalgorithm(ull snBn, int *Pbox){
+__host__ __device__ ull generateFalgorithm(ull snBn, int *d_Pbox){
 
     ull fn=0L;
     for(int j=32-1;j>=0;j--){
-            if( snBn & ( 1LL << (32-Pbox[j])*1L ) ) {
+            if( snBn & ( 1LL << (32-d_Pbox[j])*1L ) ) {
                  fn|= ( 1LL<< (31-j)*1L );
             }
     }
     return fn;
 }
 
-__host__ __device__ void generateLnRnBlocks(uull L0R0,uull *LnRnBlocks, ull *keysBlocks,int *Expansion, int *Sbox,int *Pbox){
+__host__ __device__ void generateLnRnBlocks(uull L0R0,uull *d_LnRnBlocks, ull *d_keysBlocks,int *d_Expansion, int *d_Sbox,int *d_Pbox){
 
-    LnRnBlocks[0] = L0R0;
+    d_LnRnBlocks[0] = L0R0;
     ull fn;
 
     for(int time=1; time<=16;time++){
 
-        ull Ln = LnRnBlocks[ time-1 ].first;
-        ull Rn = LnRnBlocks[ time-1 ].second;
+        ull Ln = d_LnRnBlocks[ time-1 ].first;
+        ull Rn = d_LnRnBlocks[ time-1 ].second;
        
         ull snBn = 
-            generateSboxCombination( xorOperation( expandRn( Rn, Expansion ),keysBlocks[ time-1 ] ),Sbox );
+            generateSboxCombination( xorOperation( expandRn( Rn, d_Expansion ),d_keysBlocks[ time-1 ] ),d_Sbox );
         
-        fn = generateFalgorithm(snBn,Pbox);
+        fn = generateFalgorithm(snBn,d_Pbox);
 
         uull LnRn = make_pair( Rn, (Ln ^ fn) ); 
-        LnRnBlocks[ time ] = LnRn;
+        d_LnRnBlocks[ time ] = LnRn;
 
     }
 
@@ -331,11 +331,11 @@ __host__ __device__ ull reverseLnRn( uull LnRn){
     return ( Rn<<32L) | Ln;
 }
 
-__host__ __device__ ull generateCipherMessage( ull RnLn, int *reverseIniPer ){
+__host__ __device__ ull generateCipherMessage( ull RnLn, int *d_reverseIniPer ){
 
     ull cipher=0L;
     for(int j=64-1;j>=0;j--){
-            if( RnLn & ( 1LL << (64-reverseIniPer[j])*1L ) ) {
+            if( RnLn & ( 1LL << (64-d_reverseIniPer[j])*1L ) ) {
                  cipher|= ( 1LL<< (63-j)*1L );
             }
     }
@@ -344,32 +344,32 @@ __host__ __device__ ull generateCipherMessage( ull RnLn, int *reverseIniPer ){
 
 
 __global__ void cipherDES(
-    uull *LnRnBlocks,
-    uull *CnDnBlocks,
-    ull *keysBlocks,
-    ull *allCipherDES,
-    ull *Rotations,
-    int *PC1,
-    int *PC2,
-    int *IniPer,
-    int *reverseIniPer,
-    int *Expansion,
-    int *Pbox,
-    int *Sbox,
-    ull *iniKey,
-    ull *message
+    uull *d_LnRnBlocks,
+    uull *d_CnDnBlocks,
+    ull *d_keysBlocks,
+    ull *d_allCipherDES,
+    ull *d_Rotations,
+    int *d_PC1,
+    int *d_PC2,
+    int *d_IniPer,
+    int *d_reverseIniPer,
+    int *d_Expansion,
+    int *d_Pbox,
+    int *d_Sbox,
+    ull *d_iniKey,
+    ull *d_message
 ){
-    uull keyHalves = splitKeyPlus( generateKeyPlus(iniKey,PC1) );
-    generateCnDnBlocks( keyHalves,CnDnBlocks,Rotations );
-    generateKeysBlocks(CnDnBlocks,PC2,keysBlocks);
-    uull iniPerHalves = splitIniPer(generateIniPer(IniPer,message) ); //got L0 and R0
+    uull keyHalves = splitKeyPlus( generateKeyPlus(d_iniKey,d_PC1) );
+    generateCnDnBlocks( keyHalves,d_CnDnBlocks,d_Rotations );
+    generateKeysBlocks(d_CnDnBlocks,d_PC2,d_keysBlocks);
+    uull iniPerHalves = splitIniPer(generateIniPer(d_IniPer,d_message) ); //got L0 and R0
     
 
-    generateLnRnBlocks( iniPerHalves,LnRnBlocks, keysBlocks, Expansion, Sbox, Pbox);
+    generateLnRnBlocks( iniPerHalves,d_LnRnBlocks, d_keysBlocks, d_Expansion, d_Sbox, d_Pbox);
 
-    ull revLnRn = reverseLnRn( LnRnBlocks[16] );
+    ull revLnRn = reverseLnRn( d_LnRnBlocks[16] );
    
-    ull cipherMessage = generateCipherMessage( revLnRn,reverseIniPer );
+    ull cipherMessage = generateCipherMessage( revLnRn,d_reverseIniPer );
     // // printf("cipher: %llu\n",cipherMessage);
     // // fflush(stdout);
 
