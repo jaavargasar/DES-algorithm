@@ -3,9 +3,9 @@
 using namespace std;
 
 typedef unsigned long long ull;
+#define MAX 1000000 //10 e 6
 
-int MAX = 100000;
-int THREADS_BLOCK = 190;
+int THREADS_BLOCK = 192;
 
 
 ull LnRnBlocks[17*2]; // from l0r0 to l16r16
@@ -14,7 +14,7 @@ ull CnDnBlocks[17*2]; //from c0d0 to c16d16
 
 ull keysBlocks[16];  //from key[1] = k0 to key[16] = k15
 
-ull allCipherDES[1000000];
+ull allCipherDES[MAX];
 
 ull Rotations[16] = {
     1, 1, 2, 2, 2, 2, 2, 2, 1, 2, 2, 2, 2, 2, 2, 1
@@ -362,7 +362,8 @@ __global__ void cipherDES(
     int *d_Pbox,
     int *d_Sbox,
     ull *d_iniKey,
-    ull *d_message
+    ull *d_message,
+    ull *d_result
 ){
     ull *keyHalves = splitKeyPlus( generateKeyPlus(d_iniKey,d_PC1) );
     generateCnDnBlocks( keyHalves,d_CnDnBlocks,d_Rotations );
@@ -375,13 +376,11 @@ __global__ void cipherDES(
     ull revLnRn = reverseLnRn( &d_LnRnBlocks[16*2+0],&d_LnRnBlocks[16*2+1] );
    
     ull cipherMessage = generateCipherMessage( revLnRn,d_reverseIniPer );
-    // // printf("cipher: %llu\n",cipherMessage);
-    // // fflush(stdout);
-
+    
     int iindex = threadIdx.x + blockIdx.x * blockDim.x;
-    printf("Index %i - Hex Cipher: %llX\n", iindex, cipherMessage);
+    d_result[iindex] = cipherMessage;
+    // printf("Index %i - Hex Cipher: %llX\n", iindex, cipherMessage);
    
-    // return cipherMessage;
 }
 
 int main(){
@@ -401,6 +400,8 @@ int main(){
     int *d_Sbox;//8*8*16 size [8][4][16]
     ull *d_iniKey;//8 size
     ull *d_message;//8 size
+    ull *result; //MAX SIZE
+    ull *d_result;//MAX SIZE
 
     //size of host and device copies
     int sd_LnRnBlocks = 17 * 2 * sizeof(ull);
@@ -417,8 +418,9 @@ int main(){
     int sd_Sbox = 512 * sizeof(int);
     int sd_iniKey = 8 * sizeof(ull);
     int sd_message = 8 * sizeof(ull);
+    int sd_result = MAX * sizeof(ull);
 
-    //alloc space for host and device copies
+    //alloc space for device copies
     cudaMalloc( (void **)&d_LnRnBlocks, sd_LnRnBlocks );
     cudaMalloc( (void **)&d_CnDnBlocks, sd_CnDnBlocks );
     cudaMalloc( (void **)&d_keysBlocks, sd_keysBlocks );
@@ -433,6 +435,10 @@ int main(){
     cudaMalloc( (void **)&d_Sbox, sd_Sbox );
     cudaMalloc( (void **)&d_iniKey, sd_iniKey );
     cudaMalloc( (void **)&d_message, sd_message );
+    cudaMalloc( (void **)&d_result, sd_result );
+
+    //alloc space for host copies
+    result = (ull *) malloc(sd_result);
 
     //copy inputs to device
     cudaMemcpy(d_LnRnBlocks,LnRnBlocks,sd_LnRnBlocks,cudaMemcpyHostToDevice);
@@ -449,9 +455,9 @@ int main(){
     cudaMemcpy(d_Sbox,Sbox,sd_Sbox,cudaMemcpyHostToDevice);
     cudaMemcpy(d_iniKey,iniKey,sd_iniKey,cudaMemcpyHostToDevice);
     cudaMemcpy(d_message,message,sd_message,cudaMemcpyHostToDevice);
-    
+   
     //launch kernel     ----------- HERES THE MAGIC ---------
-    cipherDES<<<MAX/THREADS_BLOCK,THREADS_BLOCK>>>(
+    cipherDES<<<ceil(MAX/THREADS_BLOCK),THREADS_BLOCK>>>(
         d_LnRnBlocks,
         d_CnDnBlocks,
         d_keysBlocks,
@@ -465,8 +471,24 @@ int main(){
         d_Pbox,
         d_Sbox,
         d_iniKey,
-        d_message
+        d_message,
+        d_result
     );
+
+
+    //copy result back to host
+    cudaMemcpy(result,d_result,sd_result,cudaMemcpyDeviceToHost);
+
+    //print result
+
+    // for(int i=0;i<MAX;i++){
+    //     printf("cipher: %i\t%llX\n",i,result[i]);
+    //     fflush(stdout);
+    // }
+
+
+    //free host space
+    free(result);
 
     //free cuda space
     cudaFree(d_LnRnBlocks);
