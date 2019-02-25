@@ -15,9 +15,9 @@ typedef unsigned long ull;
 
 #define MEM_SIZE (128)
 #define MAX_SOURCE_SIZE (0x100000)
-#define NUMTHREADS  3
-#define WORKGROUPS  2
-#define ITERATIONS  3 // 2e09
+#define NUMTHREADS 1000000
+#define WORKGROUPS 1000
+
 
 
 //global variables
@@ -197,7 +197,7 @@ int main()
   int          err;               // error code returned from OpenCL calls
   char string[MEM_SIZE];
   double h_pi[NUMTHREADS];
-  int iterations;
+ 
   /******************************************************************************/
   /* open kernel */
   FILE *fp;
@@ -301,7 +301,7 @@ int main()
   checkError(ret, "Creating kernel");
 
   /* Set OpenCL Kernel Parameters */
-  iterations = ITERATIONS;
+
   ret = clSetKernelArg(kernel, 0, sizeof(cl_mem), (void *)&d_LnRnBlocks);
   checkError(ret, "Setting kernel arguments");
 
