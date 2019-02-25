@@ -1,10 +1,15 @@
 /* pi.cl */
-#pragma OPENCL EXTENSION cl_khr_fp64 : enable
+// #pragma OPENCL EXTENSION cl_khr_fp64 : enable
 
-typedef unsigned long long ull;
+typedef unsigned long ull;
 
 
-ull generateKeyPlus(ull *d_iniKey, __global int *d_PC1){
+struct PAIR{
+    ull first;
+    ull second;
+};
+
+ull generateKeyPlus(__global ull *d_iniKey, __global int *d_PC1){
     ull keyPlus=0L;
     for(int i=56-1;i>=0;i--){
         if( d_iniKey[ d_PC1[i]/8 ] & (1 << ( ( 64-d_PC1[i]) % 8 ) ) ){
@@ -37,8 +42,10 @@ ull* splitIniPer(ull codeIniPer){
 }
 
 void generateCnDnBlocks( ull *seedKey,__global ull *d_CnDnBlocks, __global ull *d_Rotations){
-    d_CnDnBlocks[0] = seedKey[0];
-    d_CnDnBlocks[1] = seedKey[1];
+    
+
+    d_CnDnBlocks[0] = *(seedKey+0);
+    d_CnDnBlocks[1] = *(seedKey+1);
     ull cn ,dn, newCn, newDn;
     ull getOnCn, getOnDn;
 
@@ -74,7 +81,7 @@ void generateCnDnBlocks( ull *seedKey,__global ull *d_CnDnBlocks, __global ull *
 
 ull joinCnDn(ull cn, ull dn){ return (cn<<28) | dn; }
 
-void generateKeysBlocks(ull *d_CnDnBlocks,__global int *d_PC2,__global ull *d_keysBlocks){
+void generateKeysBlocks(__global ull *d_CnDnBlocks,__global int *d_PC2,__global ull *d_keysBlocks){
     ull cnDn, keyn;
 
     for(int i=1;i<=16;i++){
@@ -183,8 +190,8 @@ ull generateFalgorithm(ull snBn, __global int *d_Pbox){
 
 void generateLnRnBlocks(ull *L0R0,__global ull *d_LnRnBlocks, __global ull *d_keysBlocks, __global int *d_Expansion,__global int *d_Sbox,__global int *d_Pbox){
 
-    d_LnRnBlocks[0] = L0R0[0];
-    d_LnRnBlocks[1] = L0R0[1];
+    d_LnRnBlocks[0] = *(L0R0+0);
+    d_LnRnBlocks[1] = *(L0R0+1);
     ull fn;
 
     for(int time=1; time<=16;time++){
@@ -204,11 +211,8 @@ void generateLnRnBlocks(ull *L0R0,__global ull *d_LnRnBlocks, __global ull *d_ke
 
 }
 
-ull reverseLnRn( ull *LnRn, ull *LnRn1){
-    ull Ln = *LnRn;
-    ull Rn = *LnRn1;
-
-    return ( Rn<<32L) | Ln;
+ull reverseLnRn( ull LnRn, ull LnRn1){
+    return ( LnRn1<<32L) | LnRn;
 }
 
 ull generateCipherMessage( ull RnLn, __global int *d_reverseIniPer ){
@@ -239,7 +243,24 @@ __kernel void cipherDES(
     __global ull *d_result)
 {   
 
-    int id = get_global_id(0);
+    int iindex = get_global_id(0);
     int numthreads = get_global_size(0);
-    printf("id: %i - thtreads: %i - other: %i \n",id,numthreads,d_Pbox[0]);
+
+    ull *keyHalves = splitKeyPlus( generateKeyPlus(d_iniKey,d_PC1) );
+    generateCnDnBlocks( keyHalves,d_CnDnBlocks,d_Rotations );
+    generateKeysBlocks(d_CnDnBlocks,d_PC2,d_keysBlocks);
+    ull *iniPerHalves = splitIniPer(generateIniPer(d_IniPer,d_message) ); //got L0 and R0
+    
+
+    generateLnRnBlocks( iniPerHalves,d_LnRnBlocks, d_keysBlocks, d_Expansion, d_Sbox, d_Pbox);
+
+    //hesitate
+    ull revLnRn = reverseLnRn( d_LnRnBlocks[16*2+0], d_LnRnBlocks[16*2+1] );
+   
+    ull cipherMessage = generateCipherMessage( revLnRn,d_reverseIniPer );
+    
+    d_result[iindex] = cipherMessage;
+    
+    // printf("Index %i - Hex Cipher: %llX\n", iindex, cipherMessage);
+   
 }

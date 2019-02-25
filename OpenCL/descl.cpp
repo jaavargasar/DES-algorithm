@@ -11,13 +11,13 @@
 
 using namespace std;
 
-typedef unsigned long long ull;
+typedef unsigned long ull;
 
 #define MEM_SIZE (128)
 #define MAX_SOURCE_SIZE (0x100000)
-#define NUMTHREADS  128
+#define NUMTHREADS  3
 #define WORKGROUPS  2
-#define ITERATIONS  128 // 2e09
+#define ITERATIONS  3 // 2e09
 
 
 //global variables
@@ -377,11 +377,11 @@ int main()
 
     //printf result
 
-//   int i;
-//   for(i = 1; i < NUMTHREADS; i++){
-//     printf("cipher: %i\t%llX\n",i,result[i]);
-//     fflush(stdout);
-//   }
+  int i;
+  for(i = 0; i < NUMTHREADS; i++){
+    printf("cipher: %i\t%llX\n",i,result[i]);
+    fflush(stdout);
+  }
 
   /* Finalization */
   ret = clFlush(command_queue);
