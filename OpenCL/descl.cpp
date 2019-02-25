@@ -157,7 +157,6 @@ int main()
     cl_mem d_LnRnBlocks = NULL;//17 size
     cl_mem d_CnDnBlocks= NULL;//17 size
     cl_mem d_keysBlocks= NULL;//16 size
-    cl_mem d_allCipherDES= NULL;//10^6 size
     cl_mem d_Rotations= NULL;//16 size
     cl_mem d_PC1 = NULL;//56 size
     cl_mem d_PC2 = NULL;//48 size
@@ -168,14 +167,13 @@ int main()
     cl_mem d_Sbox = NULL;//8*8*16 size [8][4][16]
     cl_mem d_iniKey = NULL;//8 size
     cl_mem d_message = NULL;//8 size
-    ull *result = NULL; //MAX SIZE
     cl_mem d_result = NULL;//MAX SIZE
+    ull *result = NULL; //MAX SIZE
 
         //size of host and device copies
     int sd_LnRnBlocks = 17 * 2 * sizeof(ull);
     int sd_CnDnBlocks = 17 * 2 * sizeof(ull);
     int sd_keysBlocks = 16 * sizeof(ull);
-    int sd_allCipherDES = 1000000 * sizeof(ull);
     int sd_Rotations = 16 * sizeof(ull);
     int sd_PC1 = 56 * sizeof(int);
     int sd_PC2 = 48 * sizeof(int);
@@ -239,11 +237,7 @@ int main()
 
 
   d_keysBlocks = clCreateBuffer(context, CL_MEM_READ_WRITE, sd_keysBlocks , NULL, &ret);
-
-
-  d_allCipherDES = clCreateBuffer(context, CL_MEM_READ_WRITE, sd_allCipherDES, NULL, &ret);
   
-
   d_Rotations = clCreateBuffer(context, CL_MEM_READ_WRITE, sd_Rotations, NULL, &ret);
 
 
@@ -317,57 +311,55 @@ int main()
   ret = clSetKernelArg(kernel, 2, sizeof(cl_mem), (void *)&d_keysBlocks);
   checkError(ret, "Setting kernel arguments");
 
-  ret = clSetKernelArg(kernel, 3, sizeof(cl_mem), (void *)&d_allCipherDES);
+  ret = clSetKernelArg(kernel, 3, sizeof(cl_mem), (void *)&d_Rotations);
   checkError(ret, "Setting kernel arguments");
 
-  ret = clSetKernelArg(kernel, 4, sizeof(cl_mem), (void *)&d_Rotations);
-  checkError(ret, "Setting kernel arguments");
-
-  ret = clSetKernelArg(kernel, 5, sizeof( cl_mem ), (void *)&d_PC1);
+  ret = clSetKernelArg(kernel, 4, sizeof( cl_mem ), (void *)&d_PC1);
   checkError(ret, "Setting kernel arguments");  
 
-  ret = clSetKernelArg(kernel, 6, sizeof(cl_mem), (void *)&d_PC2);
+  ret = clSetKernelArg(kernel, 5, sizeof(cl_mem), (void *)&d_PC2);
   checkError(ret, "Setting kernel arguments");
 
-  ret = clSetKernelArg(kernel, 7, sizeof(cl_mem), (void *)&d_IniPer);
+  ret = clSetKernelArg(kernel, 6, sizeof(cl_mem), (void *)&d_IniPer);
   checkError(ret, "Setting kernel arguments");
 
-  ret = clSetKernelArg(kernel, 8, sizeof(cl_mem), (void *)&d_reverseIniPer);
+  ret = clSetKernelArg(kernel, 7, sizeof(cl_mem), (void *)&d_reverseIniPer);
   checkError(ret, "Setting kernel arguments");
 
-  ret = clSetKernelArg(kernel, 9, sizeof(cl_mem), (void *)&d_Expansion);
+  ret = clSetKernelArg(kernel, 8, sizeof(cl_mem), (void *)&d_Expansion);
   checkError(ret, "Setting kernel arguments");
 
-  ret = clSetKernelArg(kernel, 10, sizeof(cl_mem), (void *)&d_Pbox);
+  ret = clSetKernelArg(kernel, 9, sizeof(cl_mem), (void *)&d_Pbox);
   checkError(ret, "Setting kernel arguments");
 
-  ret = clSetKernelArg(kernel, 11, sizeof(cl_mem), (void *)&d_Sbox);
+  ret = clSetKernelArg(kernel, 10, sizeof(cl_mem), (void *)&d_Sbox);
   checkError(ret, "Setting kernel arguments");
   
-  ret = clSetKernelArg(kernel, 12, sizeof(cl_mem), (void *)&d_iniKey);
+  ret = clSetKernelArg(kernel, 11, sizeof(cl_mem), (void *)&d_iniKey);
   checkError(ret, "Setting kernel arguments");
 
-  ret = clSetKernelArg(kernel, 13, sizeof(cl_mem), (void *)&d_message);
+  ret = clSetKernelArg(kernel, 12, sizeof(cl_mem), (void *)&d_message);
   checkError(ret, "Setting kernel arguments");
 
-  ret = clSetKernelArg(kernel, 14, sizeof(cl_mem), (void *)&d_result);
+  ret = clSetKernelArg(kernel, 13, sizeof(cl_mem), (void *)&d_result);
   checkError(ret, "Setting kernel arguments");
 
   clEnqueueWriteBuffer(command_queue, d_LnRnBlocks, CL_TRUE, 0, sd_LnRnBlocks, &LnRnBlocks, 0, NULL, NULL);
-  clEnqueueWriteBuffer(command_queue, d_CnDnBlocks, CL_TRUE, 0, sd_LnRnBlocks, &CnDnBlocks, 0, NULL, NULL);
-  clEnqueueWriteBuffer(command_queue, d_keysBlocks, CL_TRUE, 0, sd_CnDnBlocks, &keysBlocks, 0, NULL, NULL);
-  clEnqueueWriteBuffer(command_queue, d_allCipherDES, CL_TRUE, 0, sd_keysBlocks, &allCipherDES, 0, NULL, NULL);
-  clEnqueueWriteBuffer(command_queue, d_Rotations, CL_TRUE, 0, sd_allCipherDES, &Rotations, 0, NULL, NULL);
-  clEnqueueWriteBuffer(command_queue, d_PC1, CL_TRUE, 0, sd_Rotations, &sd_PC1, 0, NULL, NULL);
-  clEnqueueWriteBuffer(command_queue, d_PC2, CL_TRUE, 0, sd_PC2, &sd_PC2, 0, NULL, NULL);
+  clEnqueueWriteBuffer(command_queue, d_CnDnBlocks, CL_TRUE, 0, sd_CnDnBlocks, &CnDnBlocks, 0, NULL, NULL);
+  clEnqueueWriteBuffer(command_queue, d_keysBlocks, CL_TRUE, 0, sd_keysBlocks, &keysBlocks, 0, NULL, NULL);
+  clEnqueueWriteBuffer(command_queue, d_Rotations, CL_TRUE, 0, sd_Rotations, &Rotations, 0, NULL, NULL);
+  clEnqueueWriteBuffer(command_queue, d_PC1, CL_TRUE, 0, sd_PC1, &PC1, 0, NULL, NULL);
+  clEnqueueWriteBuffer(command_queue, d_PC2, CL_TRUE, 0, sd_PC2, &PC2, 0, NULL, NULL);
   clEnqueueWriteBuffer(command_queue, d_IniPer, CL_TRUE, 0, sd_IniPer, &IniPer, 0, NULL, NULL);
   clEnqueueWriteBuffer(command_queue, d_reverseIniPer, CL_TRUE, 0, sd_reverseIniPer, &reverseIniPer, 0, NULL, NULL);
   clEnqueueWriteBuffer(command_queue, d_Expansion, CL_TRUE, 0, sd_Expansion, &Expansion, 0, NULL, NULL);
-  clEnqueueWriteBuffer(command_queue, d_Pbox, CL_TRUE, 0, sd_Pbox, &sd_Pbox, 0, NULL, NULL);
-  clEnqueueWriteBuffer(command_queue, d_Sbox, CL_TRUE, 0, sd_Sbox, &sd_Sbox, 0, NULL, NULL);
+  clEnqueueWriteBuffer(command_queue, d_Pbox, CL_TRUE, 0, sd_Pbox, &Pbox, 0, NULL, NULL);
+  clEnqueueWriteBuffer(command_queue, d_Sbox, CL_TRUE, 0, sd_Sbox, &Sbox, 0, NULL, NULL);
   clEnqueueWriteBuffer(command_queue, d_iniKey, CL_TRUE, 0, sd_iniKey, &iniKey, 0, NULL, NULL);
   clEnqueueWriteBuffer(command_queue, d_message, CL_TRUE, 0, sd_message, &message, 0, NULL, NULL);
   
+
+
   size_t global_work_size = NUMTHREADS;
   size_t local_work_size = NUMTHREADS/WORKGROUPS;
   cl_uint work_dim = 1;

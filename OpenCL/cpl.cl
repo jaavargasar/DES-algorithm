@@ -7,7 +7,6 @@ __kernel void cipherDES(
     __global ull *d_LnRnBlocks,
     __global ull *d_CnDnBlocks,
     __global ull *d_keysBlocks,
-    __global ull *d_allCipherDES,
     __global ull *d_Rotations,
     __global int *d_PC1,
     __global int *d_PC2,
@@ -23,5 +22,5 @@ __kernel void cipherDES(
 
     int id = get_global_id(0);
     int numthreads = get_global_size(0);
-    printf("id: %i - thtreads: %i\n",id,numthreads);
+    printf("id: %i - thtreads: %i - other: %i \n",id,numthreads,d_Pbox[0]);
 }
