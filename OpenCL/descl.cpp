@@ -17,7 +17,7 @@ typedef unsigned long long ull;
 #define MAX_SOURCE_SIZE (0x100000)
 #define NUMTHREADS  128
 #define WORKGROUPS  2
-#define ITERATIONS  100 // 2e09
+#define ITERATIONS  128 // 2e09
 
 
 //global variables
@@ -28,7 +28,7 @@ ull CnDnBlocks[17*2]; //from c0d0 to c16d16
 
 ull keysBlocks[16];  //from key[1] = k0 to key[16] = k15
 
-ull allCipherDES[ITERATIONS];
+ull allCipherDES[NUMTHREADS];
 
 ull Rotations[16] = {
     1, 1, 2, 2, 2, 2, 2, 2, 1, 2, 2, 2, 2, 2, 2, 1
@@ -152,6 +152,41 @@ int main()
   cl_command_queue command_queue = NULL;
 
   cl_mem d_pi = NULL;
+
+    //host and devices copies
+    cl_mem d_LnRnBlocks = NULL;//17 size
+    cl_mem d_CnDnBlocks= NULL;//17 size
+    cl_mem d_keysBlocks= NULL;//16 size
+    cl_mem d_allCipherDES= NULL;//10^6 size
+    cl_mem d_Rotations= NULL;//16 size
+    cl_mem d_PC1 = NULL;//56 size
+    cl_mem d_PC2 = NULL;//48 size
+    cl_mem d_IniPer = NULL;//64 size
+    cl_mem d_reverseIniPer = NULL;//64 size
+    cl_mem d_Expansion = NULL;//48 size
+    cl_mem d_Pbox = NULL;//32 size
+    cl_mem d_Sbox = NULL;//8*8*16 size [8][4][16]
+    cl_mem d_iniKey = NULL;//8 size
+    cl_mem d_message = NULL;//8 size
+    ull *result = NULL; //MAX SIZE
+    cl_mem d_result = NULL;//MAX SIZE
+
+        //size of host and device copies
+    int sd_LnRnBlocks = 17 * 2 * sizeof(ull);
+    int sd_CnDnBlocks = 17 * 2 * sizeof(ull);
+    int sd_keysBlocks = 16 * sizeof(ull);
+    int sd_allCipherDES = 1000000 * sizeof(ull);
+    int sd_Rotations = 16 * sizeof(ull);
+    int sd_PC1 = 56 * sizeof(int);
+    int sd_PC2 = 48 * sizeof(int);
+    int sd_IniPer = 64 * sizeof(int);
+    int sd_reverseIniPer = 64 * sizeof(int);
+    int sd_Expansion = 48 * sizeof(int);
+    int sd_Pbox = 32 * sizeof(int);
+    int sd_Sbox = 512 * sizeof(int);
+    int sd_iniKey = 8 * sizeof(ull);
+    int sd_message = 8 * sizeof(ull);
+    int sd_result = NUMTHREADS * sizeof(ull);
   
   
   cl_program program = NULL;
@@ -168,7 +203,7 @@ int main()
   /******************************************************************************/
   /* open kernel */
   FILE *fp;
-  char fileName[] = "./pi.cl";
+  char fileName[] = "./cpl.cl";
   char *source_str;
   size_t source_size;
 
@@ -197,8 +232,53 @@ int main()
   checkError(ret, "Creating queue");
 
   /* Create Memory Buffer */
-  d_pi = clCreateBuffer(context, CL_MEM_READ_WRITE, MEM_SIZE * sizeof(double), NULL, &ret);
+  d_LnRnBlocks = clCreateBuffer(context, CL_MEM_READ_WRITE, sd_LnRnBlocks, NULL, &ret);
+
+
+  d_CnDnBlocks = clCreateBuffer(context, CL_MEM_READ_WRITE, sd_CnDnBlocks, NULL, &ret);
+
+
+  d_keysBlocks = clCreateBuffer(context, CL_MEM_READ_WRITE, sd_keysBlocks , NULL, &ret);
+
+
+  d_allCipherDES = clCreateBuffer(context, CL_MEM_READ_WRITE, sd_allCipherDES, NULL, &ret);
+  
+
+  d_Rotations = clCreateBuffer(context, CL_MEM_READ_WRITE, sd_Rotations, NULL, &ret);
+
+
+  d_PC1 = clCreateBuffer(context, CL_MEM_READ_WRITE, sd_PC1, NULL, &ret);
+
+
+  d_PC2 = clCreateBuffer(context, CL_MEM_READ_WRITE, sd_PC2, NULL, &ret);
+
+
+  d_IniPer = clCreateBuffer(context, CL_MEM_READ_WRITE, sd_IniPer, NULL, &ret);
+
+
+  d_reverseIniPer = clCreateBuffer(context, CL_MEM_READ_WRITE, sd_reverseIniPer, NULL, &ret);
+
+
+  d_Expansion = clCreateBuffer(context, CL_MEM_READ_WRITE, sd_Expansion, NULL, &ret);
+
+
+  d_Pbox = clCreateBuffer(context, CL_MEM_READ_WRITE, sd_Pbox, NULL, &ret);
+
+
+  d_Sbox = clCreateBuffer(context, CL_MEM_READ_WRITE, sd_Sbox, NULL, &ret);
+ 
+
+  d_iniKey = clCreateBuffer(context, CL_MEM_READ_WRITE, sd_iniKey, NULL, &ret);
+
+
+  d_message = clCreateBuffer(context, CL_MEM_READ_WRITE, sd_message, NULL, &ret);
+
+
+  d_result = clCreateBuffer(context, CL_MEM_READ_WRITE, sd_result, NULL, &ret);
   checkError(ret, "Creating buffer d_pì");
+
+  //alloc space for host copies
+    result = (ull *) malloc(sd_result);
 
   //print kernel
   //printf("\n%s\n%i bytes\n", source_str, (int)source_size); fflush(stdout);
@@ -223,17 +303,71 @@ int main()
       return EXIT_FAILURE;
   }
   /* Create OpenCL Kernel */
-  kernel = clCreateKernel(program, "calculatePi", &ret);
+  kernel = clCreateKernel(program, "cipherDES", &ret);
   checkError(ret, "Creating kernel");
 
   /* Set OpenCL Kernel Parameters */
   iterations = ITERATIONS;
-  ret = clSetKernelArg(kernel, 0, sizeof(double), (void *)&d_pi);
-  checkError(ret, "Setting kernel arguments");
-  ret = clSetKernelArg(kernel, 1, sizeof(int), &iterations);
+  ret = clSetKernelArg(kernel, 0, sizeof(cl_mem), (void *)&d_LnRnBlocks);
   checkError(ret, "Setting kernel arguments");
 
-  //clEnqueueWriteBuffer(command_queue, pi, CL_TRUE, 0, 1, &h_pi, 0, NULL, NULL);
+  ret = clSetKernelArg(kernel, 1, sizeof(cl_mem), (void *)&d_CnDnBlocks);
+  checkError(ret, "Setting kernel arguments");
+
+  ret = clSetKernelArg(kernel, 2, sizeof(cl_mem), (void *)&d_keysBlocks);
+  checkError(ret, "Setting kernel arguments");
+
+  ret = clSetKernelArg(kernel, 3, sizeof(cl_mem), (void *)&d_allCipherDES);
+  checkError(ret, "Setting kernel arguments");
+
+  ret = clSetKernelArg(kernel, 4, sizeof(cl_mem), (void *)&d_Rotations);
+  checkError(ret, "Setting kernel arguments");
+
+  ret = clSetKernelArg(kernel, 5, sizeof( cl_mem ), (void *)&d_PC1);
+  checkError(ret, "Setting kernel arguments");  
+
+  ret = clSetKernelArg(kernel, 6, sizeof(cl_mem), (void *)&d_PC2);
+  checkError(ret, "Setting kernel arguments");
+
+  ret = clSetKernelArg(kernel, 7, sizeof(cl_mem), (void *)&d_IniPer);
+  checkError(ret, "Setting kernel arguments");
+
+  ret = clSetKernelArg(kernel, 8, sizeof(cl_mem), (void *)&d_reverseIniPer);
+  checkError(ret, "Setting kernel arguments");
+
+  ret = clSetKernelArg(kernel, 9, sizeof(cl_mem), (void *)&d_Expansion);
+  checkError(ret, "Setting kernel arguments");
+
+  ret = clSetKernelArg(kernel, 10, sizeof(cl_mem), (void *)&d_Pbox);
+  checkError(ret, "Setting kernel arguments");
+
+  ret = clSetKernelArg(kernel, 11, sizeof(cl_mem), (void *)&d_Sbox);
+  checkError(ret, "Setting kernel arguments");
+  
+  ret = clSetKernelArg(kernel, 12, sizeof(cl_mem), (void *)&d_iniKey);
+  checkError(ret, "Setting kernel arguments");
+
+  ret = clSetKernelArg(kernel, 13, sizeof(cl_mem), (void *)&d_message);
+  checkError(ret, "Setting kernel arguments");
+
+  ret = clSetKernelArg(kernel, 14, sizeof(cl_mem), (void *)&d_result);
+  checkError(ret, "Setting kernel arguments");
+
+  clEnqueueWriteBuffer(command_queue, d_LnRnBlocks, CL_TRUE, 0, sd_LnRnBlocks, &LnRnBlocks, 0, NULL, NULL);
+  clEnqueueWriteBuffer(command_queue, d_CnDnBlocks, CL_TRUE, 0, sd_LnRnBlocks, &CnDnBlocks, 0, NULL, NULL);
+  clEnqueueWriteBuffer(command_queue, d_keysBlocks, CL_TRUE, 0, sd_CnDnBlocks, &keysBlocks, 0, NULL, NULL);
+  clEnqueueWriteBuffer(command_queue, d_allCipherDES, CL_TRUE, 0, sd_keysBlocks, &allCipherDES, 0, NULL, NULL);
+  clEnqueueWriteBuffer(command_queue, d_Rotations, CL_TRUE, 0, sd_allCipherDES, &Rotations, 0, NULL, NULL);
+  clEnqueueWriteBuffer(command_queue, d_PC1, CL_TRUE, 0, sd_Rotations, &sd_PC1, 0, NULL, NULL);
+  clEnqueueWriteBuffer(command_queue, d_PC2, CL_TRUE, 0, sd_PC2, &sd_PC2, 0, NULL, NULL);
+  clEnqueueWriteBuffer(command_queue, d_IniPer, CL_TRUE, 0, sd_IniPer, &IniPer, 0, NULL, NULL);
+  clEnqueueWriteBuffer(command_queue, d_reverseIniPer, CL_TRUE, 0, sd_reverseIniPer, &reverseIniPer, 0, NULL, NULL);
+  clEnqueueWriteBuffer(command_queue, d_Expansion, CL_TRUE, 0, sd_Expansion, &Expansion, 0, NULL, NULL);
+  clEnqueueWriteBuffer(command_queue, d_Pbox, CL_TRUE, 0, sd_Pbox, &sd_Pbox, 0, NULL, NULL);
+  clEnqueueWriteBuffer(command_queue, d_Sbox, CL_TRUE, 0, sd_Sbox, &sd_Sbox, 0, NULL, NULL);
+  clEnqueueWriteBuffer(command_queue, d_iniKey, CL_TRUE, 0, sd_iniKey, &iniKey, 0, NULL, NULL);
+  clEnqueueWriteBuffer(command_queue, d_message, CL_TRUE, 0, sd_message, &message, 0, NULL, NULL);
+  
   size_t global_work_size = NUMTHREADS;
   size_t local_work_size = NUMTHREADS/WORKGROUPS;
   cl_uint work_dim = 1;
@@ -246,13 +380,16 @@ int main()
   checkError(ret, "Waiting for commands to finish");
   /******************************************************************************/
   /* Copy results from the memory buffer */
-  ret = clEnqueueReadBuffer(command_queue, d_pi, CL_TRUE, 0, NUMTHREADS * sizeof(double), h_pi, 0, NULL, NULL);
+  ret = clEnqueueReadBuffer(command_queue, d_result, CL_TRUE, 0, sd_result, result, 0, NULL, NULL);
   checkError(ret, "Creating program");
 
-  int i;
-  for(i = 1; i < NUMTHREADS; i++)
-    *h_pi = *h_pi + *(h_pi + i);
-  printf("\n%1.12f", *h_pi);
+    //printf result
+
+//   int i;
+//   for(i = 1; i < NUMTHREADS; i++){
+//     printf("cipher: %i\t%llX\n",i,result[i]);
+//     fflush(stdout);
+//   }
 
   /* Finalization */
   ret = clFlush(command_queue);
@@ -264,6 +401,8 @@ int main()
   ret = clReleaseContext(context);
 
   free(source_str);
+  //free host space
+  free(result);
 
   return 0;
 }
