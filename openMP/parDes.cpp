@@ -431,11 +431,12 @@ string converLongToString(ull number){
 }
 
 
-int main(){
+int main(int argc, char *argv[]){
 
 
-
-    #pragma omp parallel num_threads( 16 )
+    int threads = 0;
+    sscanf (argv[1], "%i", &threads);
+    #pragma omp parallel num_threads( threads )
     {
         #pragma omp for
         for(int i=0;i<MAX;i++){
