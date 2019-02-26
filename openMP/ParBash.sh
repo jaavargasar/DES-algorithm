@@ -2,11 +2,11 @@
 sudo rm -R output.time.txt
 clear
 g++ parDes.cpp -o parDes -fopenmp
-thr=4
+thr=2
 n=1
 result=0
 # continue until $n equals 5
-while [ $thr -le 16 ]
+while [ $thr -le 32 ]
 do
     n=1
     result=0
@@ -21,6 +21,6 @@ do
     done
     # echo "$result" >> output.time.txt
     echo "scale=2; $result / 5" | bc >> output.time.txt
-    thr=$(( thr+4 ))
+    thr=$(( thr*2 ))
 done
 echo "end of script"  
