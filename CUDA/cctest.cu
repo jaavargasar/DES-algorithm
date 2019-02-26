@@ -5,9 +5,6 @@ using namespace std;
 typedef unsigned long long ull;
 #define MAX 1000000 //10 e 6
 
-int THREADS_BLOCK = 192;
-
-
 ull LnRnBlocks[17*2]; // from l0r0 to l16r16
 
 ull CnDnBlocks[17*2]; //from c0d0 to c16d16
@@ -383,7 +380,12 @@ __global__ void cipherDES(
    
 }
 
-int main(){
+int main(int argc, char *argv[]){
+
+    int THREADS_BLOCK;
+    
+    sscanf (argv[1], "%i", &THREADS_BLOCK);
+    
 
     //host and devices copies
     ull *d_LnRnBlocks;//17 size
