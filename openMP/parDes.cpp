@@ -6,7 +6,7 @@ using namespace std;
 typedef unsigned long long ull;
 typedef pair< ull , ull>  uull;
 
-const ull MAX = 5; // 1000000
+const ull MAX = 1000000; // 1000000
 
 
 uull LnRnBlocks[17]; // from l0r0 to l16r16
@@ -434,15 +434,20 @@ string converLongToString(ull number){
 int main(){
 
 
-    #pragma omp parallel for
-    for(int i=0;i<MAX;i++){
-        allCipherDES[ i ] = cipherDES();
-    }
 
-     for(int i=0;i<MAX;i++){
-         printf("cipher: %llX\n", allCipherDES[i] );
-         fflush(stdout);
-     }
+    #pragma omp parallel num_threads( 16 )
+    {
+        #pragma omp for
+        for(int i=0;i<MAX;i++){
+            allCipherDES[ i ] = cipherDES();
+        }
+    
+    }    
+
+    //  for(int i=0;i<MAX;i++){
+    //      printf("cipher: %llX\n", allCipherDES[i] );
+    //      fflush(stdout);
+    //  }
 
     return 0;
 }

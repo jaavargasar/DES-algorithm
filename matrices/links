@@ -1,0 +1,23 @@
+https://www.youtube.com/watch?v=W9CV1IxIsmw
+https://stackoverflow.com/questions/12091059/how-to-parse-integer-command-line-arguments-in-c
+https://askubuntu.com/questions/223691/how-do-i-create-a-script-file-for-terminal-commands/223698
+
+https://www.cyberciti.biz/faq/unix-linux-time-command-examples-usage-syntax/
+
+/bin/bash  
+clear
+gcc p-matrix.c -o pmatrix -fopenmp
+gcc s-matrix.c -o smatrix -fopenmp
+echo "parallel"
+/usr/bin/time -f "%E real\n%U user\n%S sys\n" ./pmatrix 512 8
+echo "secuential"
+/usr/bin/time -f "%E real\n%U user\n%S sys\n" ./smatrix 512
+echo "parallel"
+/usr/bin/time -f "%E real\n%U user\n%S sys\n" ./pmatrix 1024 8
+echo "secuential"
+/usr/bin/time -f "%E real\n%U user\n%S sys\n" ./smatrix 1024
+echo "parallel"
+/usr/bin/time -f "%E real\n%U user\n%S sys\n" ./pmatrix 2048 8
+echo "secuential"
+/usr/bin/time -f "%E real\n%U user\n%S sys\n" ./smatrix 2048
+echo "end of script"  
