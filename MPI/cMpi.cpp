@@ -9,9 +9,10 @@ using namespace std;
 typedef unsigned long long ull;
 typedef pair< ull , ull>  uull;
 
-#define MAX 100 //10 e 6
+#define MAX 1000000 //10 e 6
 
 
+int size;
 uull LnRnBlocks[17]; // from l0r0 to l16r16
 
 uull CnDnBlocks[17]; //from c0d0 to c16d16
@@ -396,27 +397,25 @@ ull cipherDES(){
     return cipherMessage;
 }
 
-int main( int argc, char **argv){
+int main(int argc, char *argv[] ){
 
 
     int myid, numprocs;
     MPI_Init(&argc, &argv);
     MPI_Comm_size(MPI_COMM_WORLD, &numprocs);
     MPI_Comm_rank(MPI_COMM_WORLD, &myid);
-    if (myid == 0) printf("\nLaunching with %i processes\n", numprocs);
-    allCipherDES[ myid ] = cipherDES();
-    printf("cipher: %i\t%llX\n",myid,allCipherDES[myid]);
-    fflush(stdout);
-    MPI_Finalize();
-    
+    // if (myid == 0) printf("\nLaunching with %i processes\n", numprocs);
+    size = MAX / numprocs;
 
-    //print result
-    // for(int i=0;i<MAX;i++){
-    //     printf("cipher: %i\t%llX\n",i,allCipherDES[i]);
-    //     fflush(stdout);
-    // }
+    for( int index=0;index<size;index++){
+        allCipherDES[ index + (myid*size) ] = cipherDES();
+        // printf("cipher: %i\t%llX\n",index + (myid*size),allCipherDES[ index + (myid*size) ]);
+        // fflush(stdout);
+    }
     
-    
+    // MPI_Barrier(MPI_COMM_WORLD);
+    MPI_Finalize();
+        
     return 0;
 
 
