@@ -1,0 +1,26 @@
+parallel threads: 2
+6697.00
+parallel threads: 4
+3365.80
+parallel threads: 8
+1706.80
+parallel threads: 16
+878.20
+parallel threads: 32
+465.00
+parallel threads: 64
+359.60
+parallel threads: 128
+357.20
+parallel threads: 256
+328.00
+parallel threads: 512
+331.00
+parallel threads: 1024
+332.80
+parallel threads: 2048
+342.40
+parallel threads: 4096
+341.60
+parallel threads: 8192
+343.60

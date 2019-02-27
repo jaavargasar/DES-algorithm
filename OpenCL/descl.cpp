@@ -144,8 +144,12 @@ ull message[8] = {
 
 
 
-int main()
+int main(int argc, char *argv[])
 {
+
+
+  int THREADS_BLOCK;
+  sscanf (argv[1], "%i", &THREADS_BLOCK);
 
   cl_device_id device_id = NULL;
   cl_context context = NULL;
@@ -360,8 +364,18 @@ int main()
   
 
 
-  size_t global_work_size = NUMTHREADS;
-  size_t local_work_size = NUMTHREADS/WORKGROUPS;
+  //THREADS_BLOCK = WORKGROUPS
+  size_t global_work_size = NUMTHREADS - (NUMTHREADS%THREADS_BLOCK);
+  size_t local_work_size = THREADS_BLOCK;
+    
+  int value;
+  if(THREADS_BLOCK > 1024 ){
+    value = (NUMTHREADS + THREADS_BLOCK - 1000);
+    global_work_size = value - (value%1000);
+    local_work_size =  1000;
+
+  }
+
   cl_uint work_dim = 1;
   /* Execute OpenCL Kernel */
   //ret = clEnqueueTask(command_queue, kernel, 0, NULL,NULL);  //single work item
@@ -377,11 +391,11 @@ int main()
 
     //printf result
 
-  int i;
-  for(i = 0; i < NUMTHREADS; i++){
-    printf("cipher: %i\t%llX\n",i,result[i]);
-    fflush(stdout);
-  }
+  // int i;
+  // for(i = 0; i < NUMTHREADS; i++){
+  //   printf("cipher: %i\t%llX\n",i,result[i]);
+  //   fflush(stdout);
+  // }
 
   /* Finalization */
   ret = clFlush(command_queue);
