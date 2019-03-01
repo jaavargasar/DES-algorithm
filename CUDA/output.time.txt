@@ -1,26 +1,26 @@
 parallel threads: 2
-6676.60
+6641.00
 parallel threads: 4
-3352.40
+3341.80
 parallel threads: 8
-1699.80
+1696.40
 parallel threads: 16
-880.60
+872.20
 parallel threads: 32
-460.00
+460.40
 parallel threads: 64
-343.60
+345.80
 parallel threads: 128
-339.40
+341.00
 parallel threads: 256
-315.20
+321.00
 parallel threads: 512
-317.00
+322.00
 parallel threads: 1024
-319.80
+324.00
 parallel threads: 2048
-44.60
+53.80
 parallel threads: 4096
-43.40
+50.00
 parallel threads: 8192
-42.80
+48.40

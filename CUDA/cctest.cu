@@ -458,8 +458,17 @@ int main(int argc, char *argv[]){
     cudaMemcpy(d_iniKey,iniKey,sd_iniKey,cudaMemcpyHostToDevice);
     cudaMemcpy(d_message,message,sd_message,cudaMemcpyHostToDevice);
    
+
+
+    int global_work_size = ceil(MAX/THREADS_BLOCK);
+    int local_work_size = THREADS_BLOCK;
+    if(THREADS_BLOCK > 1000 ){
+         global_work_size = MAX - (MAX%THREADS_BLOCK);
+         global_work_size = ceil( global_work_size/THREADS_BLOCK);
+         local_work_size = THREADS_BLOCK;
+    }
     //launch kernel     ----------- HERES THE MAGIC ---------
-    cipherDES<<<ceil(MAX/THREADS_BLOCK),THREADS_BLOCK>>>(
+    cipherDES<<<global_work_size,local_work_size>>>(
         d_LnRnBlocks,
         d_CnDnBlocks,
         d_keysBlocks,
